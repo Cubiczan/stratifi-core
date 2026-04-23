@@ -1,5 +1,11 @@
 # Cognitive Mesh Enterprise Orchestrator
 
+
+## Demo
+
+https://github.com/user-attachments/assets/demo.mp4
+
+> _Generated with [demo-video-generator](https://github.com/zan-maker/demo-video-generator)_
 > Developer and enterprise infrastructure for building multi-agent AI systems that share deep organizational context and produce human-auditable, executable workflows.
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
