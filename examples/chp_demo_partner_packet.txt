@@ -1,0 +1,21 @@
+BEGIN_PAYLOAD [RX] [CHP001]
+From: Partner
+To: Claude
+Subject: RE: CHP - Phase 1 Round 1
+
+ITEM_AGREEMENTS:
+- Investment spec v1: 92% | PROVISIONAL_LOCK
+- Flip criteria present: YES
+- Third-party status: PENDING
+
+WINNER_FRAMING:
+The phased investment path wins over a full upfront commitment.
+The case is strongest when capital release is tied to explicit milestone gates.
+The main remaining risk is timing, not strategic direction.
+
+STATE_SNAPSHOT:
+- status: PROVISIONAL_LOCK
+- phase: 1
+- round: 1
+- payload_echo: [RX] [CHP001] CONFIRMED
+END_PAYLOAD [RX] [CHP001]

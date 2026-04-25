@@ -16,6 +16,7 @@ from cme.playbook import Playbook, Bullet, Reflector, Curator
 from cme.bridge import BridgeFramework, Workflow, Statement
 from cme.agent import MeshAgent, AgentCapability
 from cme.orchestrator import EnterpriseOrchestrator
+from cme.chp import CHPOrchestrator, DecisionCase, Dossier
 
 __version__ = "0.1.0"
 
@@ -37,4 +38,7 @@ __all__ = [
     "MeshAgent",
     "AgentCapability",
     "EnterpriseOrchestrator",
+    "CHPOrchestrator",
+    "DecisionCase",
+    "Dossier",
 ]

@@ -54,6 +54,38 @@ Both produce a full Markdown orchestration report: problem classification, per-a
 
 ---
 
+## CHP demo
+
+The repo now also includes a deterministic **Consensus Hardening Protocol (CHP)** walkthrough for capital allocation decisions.
+
+Quick run:
+
+```bash
+PYTHONPATH=src python3 -m cme.cli chp-start \
+  --title "Fund enterprise workflow" \
+  --company "Acme" \
+  --problem "Should we fund a new enterprise workflow team this quarter?" \
+  --amount 2500000 \
+  --payback-months 14 \
+  --min-runway 12 \
+  --current-runway 18
+```
+
+Full demo package:
+
+- [CHP_DEMO_VIDEO.md](CHP_DEMO_VIDEO.md)
+- [examples/chp_demo_video.sh](examples/chp_demo_video.sh)
+- [examples/chp_demo_partner_packet.txt](examples/chp_demo_partner_packet.txt)
+- [docs/media/README.md](docs/media/README.md)
+
+This flow shows a decision moving from session start to partner packet ingestion to third-party validation and final lock.
+
+Once recorded, the intended video path is:
+
+- `docs/media/chp-demo.mp4`
+
+---
+
 ## The 90-second demo
 
 ```bash
@@ -234,6 +266,10 @@ cme playbook {finance,strategy,compliance}   # Show an agent's seeded playbook
   --json
 
 cme context                    # Dump the seeded organizational context
+
+cme chp-start                  # Start a CHP capital allocation session scaffold
+cme chp-receive                # Attach a partner packet to an existing CHP decision
+cme chp-validate               # Apply third-party validation to a CHP decision
 ```
 
 ---

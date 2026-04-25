@@ -8,8 +8,14 @@ from pathlib import Path
 from typing import List
 
 from cme.bridge import EntryPoint
+from cme.chp import CHPOrchestrator, DecisionRegistry, Phase, ThirdPartyValidation, ValidationResult
 from cme.context import ContextEngine, Entity, Task
+from cme.finance import CapitalAllocationInput, build_capital_allocation_case
 from cme.orchestrator import EnterpriseOrchestrator
+
+
+def _registry_path(args: argparse.Namespace) -> Path:
+    return Path(getattr(args, "registry", ".chp_registry.json"))
 
 
 def _default_agents() -> List:
@@ -105,6 +111,106 @@ def _cmd_context(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_chp_start(args: argparse.Namespace) -> int:
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_capital_allocation_case(
+        CapitalAllocationInput(
+            title=args.title,
+            company=args.company,
+            proposal_summary=args.problem,
+            investment_amount_usd=args.amount,
+            expected_payback_months=args.payback_months,
+            minimum_runway_months=args.min_runway,
+            current_runway_months=args.current_runway,
+            strategic_priorities=args.priority,
+            key_risks=args.risk,
+            expected_upside=args.upside,
+            origin_model=args.origin_model,
+            partner_model=args.partner_model,
+            partner_system=args.partner_system,
+        )
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    if args.json:
+        out = {
+            "case": report.case.to_dict(),
+            "foundation_disclosure": {
+                "weakest_assumptions": disclosure.weakest_assumptions,
+                "invalidation_conditions": disclosure.invalidation_conditions,
+                "key_vulnerability": disclosure.key_vulnerability,
+            },
+            "foundation_attack": {
+                "assumption_attacks": attack.assumption_attacks,
+                "invalidation_exploitation": attack.invalidation_exploitation,
+                "vulnerability_strike": attack.vulnerability_strike,
+                "foundation_score": attack.foundation_score,
+                "attack_summary": attack.attack_summary,
+            },
+            "r0_verdict": report.r0_verdict.value,
+            "foundation_verdict": report.foundation_verdict.value,
+            "initial_packet": report.initial_packet,
+        }
+        sys.stdout.write(json.dumps(out, indent=2) + "\n")
+    else:
+        sys.stdout.write(report.render() + "\n")
+    registry.save(_registry_path(args))
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    return 0
+
+
+def _cmd_chp_receive(args: argparse.Namespace) -> int:
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    packet = Path(args.packet_file).read_text()
+    case = orch.receive_partner_packet(
+        decision_id=args.decision_id,
+        partner_packet=packet,
+        phase=Phase(args.phase),
+        round_number=args.round,
+        payload_echo=args.payload_echo,
+        snapshot_status=args.status,
+    )
+    registry.save(_registry_path(args))
+    if args.json:
+        sys.stdout.write(json.dumps(case.to_dict(), indent=2) + "\n")
+    else:
+        sys.stdout.write(
+            f"Received packet for {case.decision_id}\n"
+            f"status={case.status.value}\n"
+            f"phase={case.current_phase.value}\n"
+            f"round={case.current_round}\n"
+        )
+    return 0
+
+
+def _cmd_chp_validate(args: argparse.Namespace) -> int:
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    validation = ThirdPartyValidation(
+        validator=args.validator,
+        item=args.item,
+        challenge=args.challenge,
+        result=ValidationResult(args.result),
+        rationale=args.rationale,
+    )
+    case = orch.apply_validation(args.decision_id, validation)
+    registry.save(_registry_path(args))
+    if args.json:
+        sys.stdout.write(json.dumps(case.to_dict(), indent=2) + "\n")
+    else:
+        sys.stdout.write(
+            f"Validated {case.decision_id}\n"
+            f"status={case.status.value}\n"
+            f"locked={', '.join(case.locked_decisions) or 'NONE'}\n"
+        )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -131,6 +237,50 @@ def build_parser() -> argparse.ArgumentParser:
 
     c = sub.add_parser("context", help="Dump the seeded organizational context.")
     c.set_defaults(func=_cmd_context)
+
+    chp = sub.add_parser("chp-start", help="Start a CHP capital allocation session scaffold.")
+    chp.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    chp.add_argument("--title", required=True, help="Decision title.")
+    chp.add_argument("--company", default="Unknown Co", help="Company name.")
+    chp.add_argument("--problem", required=True, help="Core capital allocation problem statement.")
+    chp.add_argument("--amount", type=float, required=True, help="Investment amount in USD.")
+    chp.add_argument("--payback-months", type=int, required=True, help="Expected payback period.")
+    chp.add_argument("--min-runway", type=int, default=12, help="Minimum allowed runway in months.")
+    chp.add_argument("--current-runway", type=int, required=True, help="Current runway in months.")
+    chp.add_argument("--priority", action="append", default=[], help="Strategic priority. Repeatable.")
+    chp.add_argument("--risk", action="append", default=[], help="Key risk. Repeatable.")
+    chp.add_argument("--upside", action="append", default=[], help="Expected upside. Repeatable.")
+    chp.add_argument("--origin-model", default="GPT-5.4")
+    chp.add_argument("--partner-model", default="GPT-5-equivalent")
+    chp.add_argument("--partner-system", default="Partner")
+    chp.add_argument("--json", action="store_true")
+    chp.set_defaults(func=_cmd_chp_start)
+
+    chp_receive = sub.add_parser("chp-receive", help="Attach a partner packet to an existing CHP decision.")
+    chp_receive.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    chp_receive.add_argument("--decision-id", required=True)
+    chp_receive.add_argument("--packet-file", required=True, help="Path to partner packet text file.")
+    chp_receive.add_argument("--phase", type=int, choices=[0, 1, 2], required=True)
+    chp_receive.add_argument("--round", type=int, required=True)
+    chp_receive.add_argument(
+        "--status",
+        choices=["EXPLORING", "PROVISIONAL", "PROVISIONAL_LOCK", "LOCKED", "UNRESOLVED"],
+        default="EXPLORING",
+    )
+    chp_receive.add_argument("--payload-echo", default="")
+    chp_receive.add_argument("--json", action="store_true")
+    chp_receive.set_defaults(func=_cmd_chp_receive)
+
+    chp_validate = sub.add_parser("chp-validate", help="Apply third-party validation to a CHP decision.")
+    chp_validate.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    chp_validate.add_argument("--decision-id", required=True)
+    chp_validate.add_argument("--validator", required=True)
+    chp_validate.add_argument("--item", required=True)
+    chp_validate.add_argument("--challenge", required=True)
+    chp_validate.add_argument("--result", choices=["CONFIRM", "REJECT"], required=True)
+    chp_validate.add_argument("--rationale", required=True)
+    chp_validate.add_argument("--json", action="store_true")
+    chp_validate.set_defaults(func=_cmd_chp_validate)
 
     return p
 
