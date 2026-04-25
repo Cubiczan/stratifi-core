@@ -1,5 +1,21 @@
 """Finance-domain builders for CHP-enabled workflows."""
 
+from cme.finance.ap_optimizer import (
+    APInvoice,
+    APOptimizerResult,
+    AgingBucket,
+    DeferredInvoice,
+    DraftMessage,
+    NegotiationTarget,
+    PaymentRecommendation,
+    VendorConcentrationPoint,
+    WeeklyOutflowPoint,
+    build_ap_optimizer_case,
+    export_ap_optimizer_workbook,
+    load_ap_invoices_csv,
+    optimize_ap_payments,
+    render_ap_optimizer_markdown,
+)
 from cme.finance.board_reporting import (
     BoardMetric,
     BoardReportInput,
@@ -55,7 +71,13 @@ from cme.finance.variance_studio import (
 )
 
 __all__ = [
+    "APInvoice",
+    "APOptimizerResult",
+    "AgingBucket",
     "CapitalAllocationInput",
+    "DeferredInvoice",
+    "DraftMessage",
+    "NegotiationTarget",
     "BoardMetric",
     "BoardReportInput",
     "BoardReportResult",
@@ -70,6 +92,8 @@ __all__ = [
     "VarianceDriver",
     "VarianceKPI",
     "analyze_variance",
+    "build_ap_optimizer_case",
+    "export_ap_optimizer_workbook",
     "build_board_report",
     "build_board_reporting_case",
     "build_13_week_cash_forecast",
@@ -81,6 +105,7 @@ __all__ = [
     "export_board_report_pptx",
     "export_cash_forecast_input_template",
     "export_cash_forecast_workbook",
+    "load_ap_invoices_csv",
     "load_ap_csv",
     "load_board_report_input",
     "load_cash_forecast_workbook",
@@ -90,6 +115,8 @@ __all__ = [
     "load_payroll_csv",
     "load_sales_csv",
     "load_settings_csv",
+    "optimize_ap_payments",
+    "render_ap_optimizer_markdown",
     "render_board_report_markdown",
     "render_cash_forecast_markdown",
     "render_saas_operating_model_markdown",

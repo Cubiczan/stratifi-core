@@ -1,0 +1,11 @@
+invoice_id,vendor,spend_category,invoice_date,due_date,terms_days,amount,currency,status,po_number,payment_terms_text
+INV-1001,CloudHost,Infrastructure,2026-04-01,2026-04-20,19,65000,USD,Open,PO-001,Net 20
+INV-1002,HQ Landlord,Rent,2026-03-25,2026-04-18,24,22000,USD,Open,PO-002,Net 25
+INV-1003,SureCover,Insurance,2026-03-30,2026-04-24,25,18000,USD,Open,PO-003,Net 25
+INV-1004,PackRight,Packaging,2026-04-04,2026-04-16,12,28500,USD,Open,PO-004,Net 12
+INV-1005,AdWorks,Marketing,2026-04-05,2026-04-30,25,36000,USD,Approved,PO-005,Net 25
+INV-1006,ContractFab,Inventory,2026-04-08,2026-04-17,9,88000,USD,Open,PO-006,Net 10
+INV-1007,TradeShow Co,Marketing,2026-04-09,2026-05-02,23,30000,USD,Pending,PO-007,Net 21
+INV-1008,State Revenue,Taxes,2026-04-10,2026-05-14,34,54000,USD,Open,PO-008,Net 30
+INV-1009,DataRail,Software,2026-04-03,,30,14000,USD,Open,PO-009,Net 30
+INV-1010,FreightCo,Logistics,2026-04-06,2026-04-15,9,42000,USD,Open,PO-010,Net 10

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import List
 
@@ -21,6 +22,7 @@ from cme.finance import (
     BoardReportInput,
     OperatingModelAssumptions,
     CapitalAllocationInput,
+    build_ap_optimizer_case,
     build_board_report,
     build_board_reporting_case,
     build_13_week_cash_forecast,
@@ -30,6 +32,8 @@ from cme.finance import (
     build_cash_forecast_case,
     build_saas_operating_model_case,
     build_variance_case,
+    export_ap_optimizer_workbook,
+    load_ap_invoices_csv,
     export_board_report_pptx,
     export_cash_forecast_input_template,
     export_cash_forecast_workbook,
@@ -44,6 +48,8 @@ from cme.finance import (
     load_sales_csv,
     load_settings_csv,
     load_variance_csv,
+    optimize_ap_payments,
+    render_ap_optimizer_markdown,
     render_board_report_markdown,
     render_cash_forecast_markdown,
     render_saas_operating_model_markdown,
@@ -618,6 +624,66 @@ def _cmd_board_reporting_generator(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ap_optimizer(args: argparse.Namespace) -> int:
+    invoices, load_warnings = load_ap_invoices_csv(args.csv)
+    result = optimize_ap_payments(
+        invoices,
+        cash_available=args.cash_available,
+        avoid_overdue=args.avoid_overdue,
+        strategic_vendors=args.strategic_vendor,
+        max_vendors=args.max_vendors,
+        as_of_date=datetime.strptime(args.as_of_date, "%Y-%m-%d").date() if args.as_of_date else None,
+    )
+    result.warnings = list(dict.fromkeys(load_warnings + result.warnings))
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_ap_optimizer_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_ap_optimizer_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "optimizer": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_xlsx:
+        export_ap_optimizer_workbook(
+            result,
+            session_summary=report.render(),
+            output_path=args.out_xlsx,
+        )
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_xlsx:
+        sys.stderr.write(f"[wrote xlsx export to {args.out_xlsx}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -817,6 +883,23 @@ def build_parser() -> argparse.ArgumentParser:
     board.add_argument("--out-pptx", default=None)
     board.add_argument("--json", action="store_true")
     board.set_defaults(func=_cmd_board_reporting_generator)
+
+    ap = sub.add_parser("ap-optimizer", help="Run the AP Cash & Payables Optimizer.")
+    ap.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    ap.add_argument("--csv", required=True, help="AP invoice CSV.")
+    ap.add_argument("--cash-available", type=float, required=True, help="Cash available for AP this week.")
+    ap.add_argument("--avoid-overdue", action="store_true", default=False)
+    ap.add_argument("--strategic-vendor", action="append", default=[], help="Strategic vendor. Repeatable.")
+    ap.add_argument("--max-vendors", type=int, default=10)
+    ap.add_argument("--as-of-date", default=None, help="Optional YYYY-MM-DD override for aging and due-date logic.")
+    ap.add_argument("--origin-model", default="GPT-5.4")
+    ap.add_argument("--partner-model", default="GPT-5-equivalent")
+    ap.add_argument("--partner-system", default="Partner")
+    ap.add_argument("--out-md", default=None)
+    ap.add_argument("--out-json", default=None)
+    ap.add_argument("--out-xlsx", default=None)
+    ap.add_argument("--json", action="store_true")
+    ap.set_defaults(func=_cmd_ap_optimizer)
 
     return p
 
