@@ -1,0 +1,32 @@
+{
+  "title": "Launch enterprise onboarding automation",
+  "company": "coolreports.ai",
+  "proposal_type": "growth_bet",
+  "investment_amount_usd": 850000,
+  "annual_revenue_uplift_usd": 620000,
+  "annual_cost_savings_usd": 140000,
+  "npv_usd": 430000,
+  "irr_pct": 0.24,
+  "payback_months": 18,
+  "cac_usd": 16500,
+  "ltv_usd": 118000,
+  "gross_margin_pct": 0.81,
+  "strategic_fit_score": 8.5,
+  "evidence_quality_score": 7.0,
+  "execution_risk_score": 4.5,
+  "market_confidence_score": 7.5,
+  "sponsor": "VP Finance",
+  "strategic_rationale": [
+    "Accelerates enterprise conversion capacity without matching headcount growth",
+    "Supports the board target for higher-quality ARR growth"
+  ],
+  "key_risks": [
+    "Workflow adoption could lag if sales engineering is not staffed appropriately",
+    "Implementation scope can expand if customer-specific edge cases are undercounted"
+  ],
+  "evidence_items": [
+    "Pilot conversion lift analysis",
+    "Vendor benchmark pricing pack",
+    "Enterprise onboarding time-study"
+  ]
+}

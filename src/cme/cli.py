@@ -22,6 +22,7 @@ from cme.finance import (
     BoardReportInput,
     OperatingModelAssumptions,
     CapitalAllocationInput,
+    SaaSKPIDashboardResult,
     SimulatorInputs,
     build_ap_optimizer_case,
     build_decision_impact_case,
@@ -30,6 +31,9 @@ from cme.finance import (
     build_board_reporting_case,
     build_13_week_cash_forecast,
     build_24_month_saas_operating_model,
+    build_investment_committee_case,
+    build_saas_kpi_dashboard,
+    build_saas_kpi_dashboard_case,
     analyze_variance,
     build_capital_allocation_case,
     build_cash_forecast_case,
@@ -40,14 +44,18 @@ from cme.finance import (
     export_board_report_pptx,
     export_cash_forecast_input_template,
     export_cash_forecast_workbook,
+    export_investment_committee_workbook,
+    export_saas_kpi_dashboard_workbook,
     export_saas_operating_model_workbook,
     load_ap_csv,
     load_cash_forecast_workbook,
     load_board_report_input,
+    load_investment_proposal,
     load_mrr_history_csv,
     load_opening_cash_csv,
     load_outflows_csv,
     load_payroll_csv,
+    load_saas_dashboard_csv,
     load_sales_csv,
     load_settings_csv,
     load_variance_csv,
@@ -57,9 +65,13 @@ from cme.finance import (
     render_decision_impact_markdown,
     render_board_report_markdown,
     render_cash_forecast_markdown,
+    render_investment_committee_markdown,
+    render_saas_kpi_dashboard_html,
+    render_saas_kpi_dashboard_markdown,
     render_saas_operating_model_markdown,
     render_variance_html,
     render_variance_markdown,
+    score_investment_proposal,
 )
 from cme.orchestrator import EnterpriseOrchestrator
 
@@ -760,6 +772,115 @@ def _cmd_decision_impact_simulator(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_saas_kpi_dashboard(args: argparse.Namespace) -> int:
+    actuals = load_saas_dashboard_csv(args.actuals_csv)
+    budget = load_saas_dashboard_csv(args.budget_csv)
+    result: SaaSKPIDashboardResult = build_saas_kpi_dashboard(actuals, budget)
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_saas_kpi_dashboard_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_saas_kpi_dashboard_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "dashboard": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_html:
+        Path(args.out_html).write_text(render_saas_kpi_dashboard_html(result, session_summary=report.render()))
+    if args.out_xlsx:
+        export_saas_kpi_dashboard_workbook(
+            result,
+            session_summary=report.render(),
+            output_path=args.out_xlsx,
+        )
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_html:
+        sys.stderr.write(f"[wrote html export to {args.out_html}]\n")
+    if args.out_xlsx:
+        sys.stderr.write(f"[wrote xlsx export to {args.out_xlsx}]\n")
+    return 0
+
+
+def _cmd_investment_committee(args: argparse.Namespace) -> int:
+    proposal = load_investment_proposal(args.input_json)
+    result = score_investment_proposal(proposal)
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_investment_committee_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_investment_committee_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "committee": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_xlsx:
+        export_investment_committee_workbook(
+            result,
+            session_summary=report.render(),
+            output_path=args.out_xlsx,
+        )
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_xlsx:
+        sys.stderr.write(f"[wrote xlsx export to {args.out_xlsx}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -1009,6 +1130,32 @@ def build_parser() -> argparse.ArgumentParser:
     sim.add_argument("--out-html", default=None)
     sim.add_argument("--json", action="store_true")
     sim.set_defaults(func=_cmd_decision_impact_simulator)
+
+    kpi = sub.add_parser("saas-kpi-dashboard", help="Build the SaaS KPI dashboard from actuals and budget CSVs.")
+    kpi.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    kpi.add_argument("--actuals-csv", required=True, help="Actuals KPI CSV.")
+    kpi.add_argument("--budget-csv", required=True, help="Budget KPI CSV.")
+    kpi.add_argument("--origin-model", default="GPT-5.4")
+    kpi.add_argument("--partner-model", default="GPT-5-equivalent")
+    kpi.add_argument("--partner-system", default="Partner")
+    kpi.add_argument("--out-md", default=None)
+    kpi.add_argument("--out-json", default=None)
+    kpi.add_argument("--out-html", default=None)
+    kpi.add_argument("--out-xlsx", default=None)
+    kpi.add_argument("--json", action="store_true")
+    kpi.set_defaults(func=_cmd_saas_kpi_dashboard)
+
+    committee = sub.add_parser("investment-committee", help="Score a finance proposal for investment committee review.")
+    committee.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    committee.add_argument("--input-json", required=True, help="Structured investment proposal JSON.")
+    committee.add_argument("--origin-model", default="GPT-5.4")
+    committee.add_argument("--partner-model", default="GPT-5-equivalent")
+    committee.add_argument("--partner-system", default="Partner")
+    committee.add_argument("--out-md", default=None)
+    committee.add_argument("--out-json", default=None)
+    committee.add_argument("--out-xlsx", default=None)
+    committee.add_argument("--json", action="store_true")
+    committee.set_defaults(func=_cmd_investment_committee)
 
     return p
 
