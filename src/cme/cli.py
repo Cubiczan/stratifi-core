@@ -18,16 +18,21 @@ from cme.cfo_os import (
 from cme.chp import CHPOrchestrator, DecisionRegistry, Phase, ThirdPartyValidation, ValidationResult
 from cme.context import ContextEngine, Entity, Task
 from cme.finance import (
+    OperatingModelAssumptions,
     CapitalAllocationInput,
     build_13_week_cash_forecast,
+    build_24_month_saas_operating_model,
     analyze_variance,
     build_capital_allocation_case,
     build_cash_forecast_case,
+    build_saas_operating_model_case,
     build_variance_case,
     export_cash_forecast_input_template,
     export_cash_forecast_workbook,
+    export_saas_operating_model_workbook,
     load_ap_csv,
     load_cash_forecast_workbook,
+    load_mrr_history_csv,
     load_opening_cash_csv,
     load_outflows_csv,
     load_payroll_csv,
@@ -35,6 +40,7 @@ from cme.finance import (
     load_settings_csv,
     load_variance_csv,
     render_cash_forecast_markdown,
+    render_saas_operating_model_markdown,
     render_variance_html,
     render_variance_markdown,
 )
@@ -481,6 +487,79 @@ def _cmd_cash_forecast_13w_template(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_saas_model_24m(args: argparse.Namespace) -> int:
+    history_rows = load_mrr_history_csv(args.history_csv) if args.history_csv else []
+    assumptions = OperatingModelAssumptions(
+        company_name=args.company,
+        opening_cash_usd=args.opening_cash,
+        current_customers=args.current_customers,
+        current_arpa=args.current_arpa,
+        gross_margin_pct=args.gross_margin_pct,
+        monthly_opex_usd=args.monthly_opex,
+        current_headcount=args.current_headcount,
+        horizon_months=args.horizon_months,
+        default_churn_pct=args.default_churn_pct,
+        starting_new_customers=args.starting_new_customers,
+        new_customers_increment_per_month=args.new_customers_increment,
+        arpa_step_up_usd=args.arpa_step_up,
+        arpa_step_up_every_months=args.arpa_step_months,
+        hires_per_wave=args.hires_per_wave,
+        hire_every_months=args.hire_every_months,
+        recruitment_cost_per_wave_usd=args.recruitment_cost,
+        annual_salary_increase_pct=args.annual_salary_increase_pct,
+        fundraise_month_number=args.fundraise_month,
+        fundraise_amount_usd=args.fundraise_amount,
+    )
+    result = build_24_month_saas_operating_model(assumptions, history_rows=history_rows)
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_saas_operating_model_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_saas_operating_model_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "model": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_xlsx:
+        export_saas_operating_model_workbook(
+            result,
+            session_summary=report.render(),
+            output_path=args.out_xlsx,
+        )
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_xlsx:
+        sys.stderr.write(f"[wrote xlsx export to {args.out_xlsx}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -637,6 +716,37 @@ def build_parser() -> argparse.ArgumentParser:
     cash13_template.add_argument("--out-xlsx", required=True)
     cash13_template.add_argument("--from-examples", action="store_true", help="Seed the template with the example dataset.")
     cash13_template.set_defaults(func=_cmd_cash_forecast_13w_template)
+
+    saas24 = sub.add_parser("saas-model-24m", help="Run the 24-month SaaS operating model.")
+    saas24.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    saas24.add_argument("--history-csv", default=None, help="Optional SaaS MRR history CSV for driver forecasting.")
+    saas24.add_argument("--company", default="coolreports.ai")
+    saas24.add_argument("--opening-cash", type=float, default=1_000_000.0)
+    saas24.add_argument("--current-customers", type=int, default=247)
+    saas24.add_argument("--current-arpa", type=float, default=1256.0)
+    saas24.add_argument("--gross-margin-pct", type=float, default=0.81)
+    saas24.add_argument("--monthly-opex", type=float, default=350_000.0)
+    saas24.add_argument("--current-headcount", type=int, default=31)
+    saas24.add_argument("--horizon-months", type=int, default=24)
+    saas24.add_argument("--default-churn-pct", type=float, default=0.02)
+    saas24.add_argument("--starting-new-customers", type=int, default=10)
+    saas24.add_argument("--new-customers-increment", type=int, default=1)
+    saas24.add_argument("--arpa-step-up", type=float, default=50.0)
+    saas24.add_argument("--arpa-step-months", type=int, default=6)
+    saas24.add_argument("--hires-per-wave", type=int, default=5)
+    saas24.add_argument("--hire-every-months", type=int, default=4)
+    saas24.add_argument("--recruitment-cost", type=float, default=30_000.0)
+    saas24.add_argument("--annual-salary-increase-pct", type=float, default=0.10)
+    saas24.add_argument("--fundraise-month", type=int, default=12)
+    saas24.add_argument("--fundraise-amount", type=float, default=1_000_000.0)
+    saas24.add_argument("--origin-model", default="GPT-5.4")
+    saas24.add_argument("--partner-model", default="GPT-5-equivalent")
+    saas24.add_argument("--partner-system", default="Partner")
+    saas24.add_argument("--out-md", default=None)
+    saas24.add_argument("--out-json", default=None)
+    saas24.add_argument("--out-xlsx", default=None)
+    saas24.add_argument("--json", action="store_true")
+    saas24.set_defaults(func=_cmd_saas_model_24m)
 
     return p
 
