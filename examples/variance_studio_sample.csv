@@ -1,0 +1,11 @@
+period,entity,department,account,category,actual,budget
+2026-03,Acme,Sales,Subscription Revenue,Revenue,1280000,1200000
+2026-03,Acme,Sales,Services Revenue,Revenue,185000,220000
+2026-03,Acme,Operations,Hosting Costs,COGS,210000,180000
+2026-03,Acme,Operations,Customer Support,COGS,145000,150000
+2026-03,Acme,Marketing,Paid Search,OPEX,240000,180000
+2026-03,Acme,Marketing,Events,OPEX,125000,160000
+2026-03,Acme,G&A,Legal,OPEX,92000,70000
+2026-03,Acme,R&D,Product Engineering,OPEX,620000,610000
+2026-02,Acme,Sales,Subscription Revenue,Revenue,1175000,1190000
+2026-02,Acme,Marketing,Paid Search,OPEX,175000,170000

@@ -10,7 +10,15 @@ from typing import List
 from cme.bridge import EntryPoint
 from cme.chp import CHPOrchestrator, DecisionRegistry, Phase, ThirdPartyValidation, ValidationResult
 from cme.context import ContextEngine, Entity, Task
-from cme.finance import CapitalAllocationInput, build_capital_allocation_case
+from cme.finance import (
+    CapitalAllocationInput,
+    analyze_variance,
+    build_capital_allocation_case,
+    build_variance_case,
+    load_variance_csv,
+    render_variance_html,
+    render_variance_markdown,
+)
 from cme.orchestrator import EnterpriseOrchestrator
 
 
@@ -211,6 +219,65 @@ def _cmd_chp_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_variance_copilot(args: argparse.Namespace) -> int:
+    rows, load_warnings = load_variance_csv(args.csv)
+    result = analyze_variance(
+        rows,
+        period=args.period,
+        entity=args.entity,
+        group_by=args.group_by,
+        materiality_mode=args.materiality_mode,
+        abs_threshold=args.abs_threshold,
+        pct_threshold=args.pct_threshold,
+    )
+    if load_warnings:
+        result.data_quality_warnings = list(dict.fromkeys(load_warnings + result.data_quality_warnings))
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_variance_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_variance_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "analysis": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_html:
+        Path(args.out_html).write_text(render_variance_html(result, session_summary=report.render()))
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_html:
+        sys.stderr.write(f"[wrote html export to {args.out_html}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -281,6 +348,24 @@ def build_parser() -> argparse.ArgumentParser:
     chp_validate.add_argument("--rationale", required=True)
     chp_validate.add_argument("--json", action="store_true")
     chp_validate.set_defaults(func=_cmd_chp_validate)
+
+    variance = sub.add_parser("variance-studio", help="Run the Monthly CFO Variance Studio on a CSV file.")
+    variance.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    variance.add_argument("--csv", required=True, help="CSV with period, entity, department, account, category, actual, budget.")
+    variance.add_argument("--period", default=None, help="Analysis period. Defaults to latest in file.")
+    variance.add_argument("--entity", default=None, help="Entity name. Defaults to first entity in file.")
+    variance.add_argument("--group-by", choices=["account", "department"], default="account")
+    variance.add_argument("--materiality-mode", choices=["auto", "manual"], default="auto")
+    variance.add_argument("--abs-threshold", type=float, default=None, help="Absolute variance threshold for manual mode.")
+    variance.add_argument("--pct-threshold", type=float, default=None, help="Variance percentage threshold for manual mode, expressed as decimal.")
+    variance.add_argument("--origin-model", default="GPT-5.4")
+    variance.add_argument("--partner-model", default="GPT-5-equivalent")
+    variance.add_argument("--partner-system", default="Partner")
+    variance.add_argument("--out-md", default=None, help="Optional markdown export path.")
+    variance.add_argument("--out-json", default=None, help="Optional JSON export path.")
+    variance.add_argument("--out-html", default=None, help="Optional HTML dashboard export path.")
+    variance.add_argument("--json", action="store_true")
+    variance.set_defaults(func=_cmd_variance_copilot)
 
     return p
 

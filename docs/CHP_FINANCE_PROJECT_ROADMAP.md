@@ -29,7 +29,7 @@ Scale:
 
 | Rank | Project | Core CFO Use Case | Effort | Impact | CHP Fit | Required Data | Skills / Assets | Recommended MVP |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Monthly CFO Variance Copilot | Explain actual vs budget performance, identify top drivers, produce board-ready commentary | Medium | Very High | Very High | Actuals, budget, account mapping, entity/department dimensions, prior month narrative | `Excel`, `CFO Monthly analysis prompt.docx`, `Variance AI app and AP Optimier app prompts.docx` | Upload two files, rank top 3 drivers, generate narrative, run CHP review before lock |
+| 1 | Monthly CFO Variance Studio | Explain actual vs budget performance, identify top drivers, produce board-ready commentary | Medium | Very High | Very High | Actuals, budget, account mapping, entity/department dimensions, prior month narrative | `Excel`, `CFO Monthly analysis prompt.docx`, `Variance AI app and AP Optimier app prompts.docx` | Upload two files, rank top 3 drivers, generate narrative, run CHP review before lock |
 | 2 | 13-Week Cash Forecast Engine | Consolidate AR, AP, payroll, and outflows into a short-term cash view with red-zone detection | Medium | Very High | High | Opening cash, AR aging, AP schedule, payroll calendar, outflows, recent sales/receipts | `Excel`, `13 week forecast.docx`, `financial-risk-assessment-matrix.skill` | File upload, weekly summary, red-zone flags, scenario toggles, CHP hardening on assumptions and action plan |
 | 3 | Board Reporting Generator | Produce repeatable board decks from finance data plus leadership commentary | High | Very High | Very High | P&L, cash, KPI tracker, variance report, strategic notes, board commentary | `PowerPoint`, `board-reporting-generator.skill`, `financial-storytelling.skill`, `Board storytelling.docx`, `board presentation.docx` | KPI ingestion, slide skeleton, chart build, leadership notes merge, CHP lock before board issue |
 | 4 | AP Cash & Payables Optimizer | Prioritize weekly payments under cash constraints without damaging strategic suppliers | Medium | High | High | AP ledger, due dates, vendor metadata, strategic vendor flags, available cash | `Excel`, `Variance AI app and AP Optimier app prompts.docx` | Payment ranking UI, overdue protection, strategic vendor preference, CHP hardening on payout policy |
@@ -44,7 +44,7 @@ Scale:
 
 ### Wave 1: Fastest ROI
 
-1. Monthly CFO Variance Copilot
+1. Monthly CFO Variance Studio
 2. 13-Week Cash Forecast Engine
 3. Board Reporting Generator
 
@@ -94,7 +94,7 @@ Purpose:
 
 Examples:
 
-- Variance Copilot: are the top drivers actually evidenced by the data?
+- Variance Studio: are the top drivers actually evidenced by the data?
 - Cash Forecast: are timing assumptions too optimistic?
 - Board Deck: is the narrative stronger than the numbers support?
 
@@ -108,7 +108,7 @@ Purpose:
 
 Examples:
 
-- Variance Copilot: lock the top 3 drivers and recommendation set
+- Variance Studio: lock the top 3 drivers and recommendation set
 - Cash Forecast: lock methodology, scenario thresholds, and alert rules
 - Board Generator: lock the storyline, KPI set, and risks before slide generation
 
@@ -127,7 +127,7 @@ Examples:
 
 ## Per-Project MVP Notes
 
-### 1. Monthly CFO Variance Copilot
+### 1. Monthly CFO Variance Studio
 
 Ship first because it is the cleanest wedge.
 
@@ -228,7 +228,7 @@ This keeps CHP as the durable substrate instead of a one-off feature inside each
 
 Implement next in this order:
 
-1. Monthly CFO Variance Copilot
+1. Monthly CFO Variance Studio
 2. 13-Week Cash Forecast Engine
 3. Board Reporting Generator
 
