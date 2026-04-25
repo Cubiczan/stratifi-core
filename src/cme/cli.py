@@ -22,7 +22,10 @@ from cme.finance import (
     BoardReportInput,
     OperatingModelAssumptions,
     CapitalAllocationInput,
+    SimulatorInputs,
     build_ap_optimizer_case,
+    build_decision_impact_case,
+    build_decision_impact_simulation,
     build_board_report,
     build_board_reporting_case,
     build_13_week_cash_forecast,
@@ -50,6 +53,8 @@ from cme.finance import (
     load_variance_csv,
     optimize_ap_payments,
     render_ap_optimizer_markdown,
+    render_decision_impact_html,
+    render_decision_impact_markdown,
     render_board_report_markdown,
     render_cash_forecast_markdown,
     render_saas_operating_model_markdown,
@@ -684,6 +689,77 @@ def _cmd_ap_optimizer(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_decision_impact_simulator(args: argparse.Namespace) -> int:
+    inputs = SimulatorInputs(
+        cash_balance=args.cash_balance,
+        monthly_revenue=args.monthly_revenue,
+        gross_margin_pct=args.gross_margin_pct,
+        monthly_operating_expenses=args.monthly_operating_expenses,
+        headcount=args.headcount,
+        monthly_churn_pct=args.monthly_churn_pct,
+        new_customers_per_month=args.new_customers_per_month,
+        average_contract_value=args.average_contract_value,
+        ar_days=args.ar_days,
+        ap_days=args.ap_days,
+        pricing_change_pct=args.pricing_change_pct,
+        new_customer_growth_change_pct=args.new_customer_growth_change_pct,
+        churn_improvement_pct=args.churn_improvement_pct,
+        expansion_revenue_pct=args.expansion_revenue_pct,
+        hiring_plan=args.hiring_plan,
+        salary_cost_change_pct=args.salary_cost_change_pct,
+        non_payroll_cost_change_pct=args.non_payroll_cost_change_pct,
+        ar_days_change=args.ar_days_change,
+        ap_days_change=args.ap_days_change,
+        demand_shock_pct=args.demand_shock_pct,
+        cost_shock_pct=args.cost_shock_pct,
+        horizon_months=args.horizon_months,
+    )
+    result = build_decision_impact_simulation(inputs)
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_decision_impact_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_decision_impact_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "simulation": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_html:
+        Path(args.out_html).write_text(render_decision_impact_html(result, session_summary=report.render()))
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_html:
+        sys.stderr.write(f"[wrote html export to {args.out_html}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -900,6 +976,39 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--out-xlsx", default=None)
     ap.add_argument("--json", action="store_true")
     ap.set_defaults(func=_cmd_ap_optimizer)
+
+    sim = sub.add_parser("decision-impact-simulator", help="Run the CFO Decision Impact Simulator.")
+    sim.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    sim.add_argument("--cash-balance", type=float, default=1_200_000.0)
+    sim.add_argument("--monthly-revenue", type=float, default=420_000.0)
+    sim.add_argument("--gross-margin-pct", type=float, default=0.72)
+    sim.add_argument("--monthly-operating-expenses", type=float, default=360_000.0)
+    sim.add_argument("--headcount", type=int, default=28)
+    sim.add_argument("--monthly-churn-pct", type=float, default=0.018)
+    sim.add_argument("--new-customers-per-month", type=int, default=10)
+    sim.add_argument("--average-contract-value", type=float, default=9_500.0)
+    sim.add_argument("--ar-days", type=float, default=42.0)
+    sim.add_argument("--ap-days", type=float, default=28.0)
+    sim.add_argument("--pricing-change-pct", type=float, default=0.0)
+    sim.add_argument("--new-customer-growth-change-pct", type=float, default=0.0)
+    sim.add_argument("--churn-improvement-pct", type=float, default=0.0)
+    sim.add_argument("--expansion-revenue-pct", type=float, default=0.02)
+    sim.add_argument("--hiring-plan", choices=["freeze", "moderate", "aggressive"], default="moderate")
+    sim.add_argument("--salary-cost-change-pct", type=float, default=0.0)
+    sim.add_argument("--non-payroll-cost-change-pct", type=float, default=0.0)
+    sim.add_argument("--ar-days-change", type=float, default=0.0)
+    sim.add_argument("--ap-days-change", type=float, default=0.0)
+    sim.add_argument("--demand-shock-pct", type=float, default=0.0)
+    sim.add_argument("--cost-shock-pct", type=float, default=0.0)
+    sim.add_argument("--horizon-months", type=int, default=24)
+    sim.add_argument("--origin-model", default="GPT-5.4")
+    sim.add_argument("--partner-model", default="GPT-5-equivalent")
+    sim.add_argument("--partner-system", default="Partner")
+    sim.add_argument("--out-md", default=None)
+    sim.add_argument("--out-json", default=None)
+    sim.add_argument("--out-html", default=None)
+    sim.add_argument("--json", action="store_true")
+    sim.set_defaults(func=_cmd_decision_impact_simulator)
 
     return p
 

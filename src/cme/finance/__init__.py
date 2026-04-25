@@ -16,6 +16,15 @@ from cme.finance.ap_optimizer import (
     optimize_ap_payments,
     render_ap_optimizer_markdown,
 )
+from cme.finance.decision_impact_simulator import (
+    SimulatorInputs,
+    SimulatorMonth,
+    SimulatorResult,
+    build_decision_impact_case,
+    build_decision_impact_simulation,
+    render_decision_impact_html,
+    render_decision_impact_markdown,
+)
 from cme.finance.board_reporting import (
     BoardMetric,
     BoardReportInput,
@@ -81,6 +90,9 @@ __all__ = [
     "BoardMetric",
     "BoardReportInput",
     "BoardReportResult",
+    "SimulatorInputs",
+    "SimulatorMonth",
+    "SimulatorResult",
     "CashForecastWorkbookInput",
     "CashForecast13WResult",
     "ForecastSettings",
@@ -94,6 +106,8 @@ __all__ = [
     "analyze_variance",
     "build_ap_optimizer_case",
     "export_ap_optimizer_workbook",
+    "build_decision_impact_case",
+    "build_decision_impact_simulation",
     "build_board_report",
     "build_board_reporting_case",
     "build_13_week_cash_forecast",
@@ -117,6 +131,8 @@ __all__ = [
     "load_settings_csv",
     "optimize_ap_payments",
     "render_ap_optimizer_markdown",
+    "render_decision_impact_html",
+    "render_decision_impact_markdown",
     "render_board_report_markdown",
     "render_cash_forecast_markdown",
     "render_saas_operating_model_markdown",
