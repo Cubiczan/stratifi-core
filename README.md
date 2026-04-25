@@ -1,4 +1,4 @@
-# Cognitive Mesh Enterprise Orchestrator
+# Consensus Hardening Protocol
 
 
 ## Demo
@@ -6,7 +6,7 @@
 https://github.com/user-attachments/assets/demo.mp4
 
 > _Generated with [demo-video-generator](https://github.com/zan-maker/demo-video-generator)_
-> Developer and enterprise infrastructure for building multi-agent AI systems that share deep organizational context and produce human-auditable, executable workflows.
+> Developer and enterprise infrastructure for building hardened, human-auditable multi-agent finance and decision workflows.
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -22,7 +22,7 @@ As organizations deploy multiple specialized AI agents (a finance agent, a strat
 2. **Reasoning opacity** — humans get a conclusion without seeing how it was reached
 3. **Output drift** — agents produce prose; humans need something runnable
 
-The Cognitive Mesh Enterprise Orchestrator composes four well-specified subsystems to solve all three:
+Consensus Hardening Protocol composes four well-specified subsystems to solve all three:
 
 | Subsystem | Role | Spec it implements |
 |---|---|---|
@@ -31,15 +31,15 @@ The Cognitive Mesh Enterprise Orchestrator composes four well-specified subsyste
 | **Agentic Context Engineering** | Evolving playbooks with Generator/Reflector/Curator, delta-only updates | `agentic-context-engineering.skill` |
 | *Statement & workflow synthesizer* | Turns multi-agent output into a vivid problem statement + executable workflow | *(bundled)* |
 
-Together they form a **mesh**: every agent reads from and writes to shared context, reasons visibly, and self-improves its playbook after every turn.
+Together they form a hardened decision system: every agent reads from and writes to shared context, reasons visibly, and improves its operating playbook over time.
 
 ---
 
 ## Quick start
 
 ```bash
-git clone https://github.com/zan-maker/cognitive-mesh-orchestrator.git
-cd cognitive-mesh-orchestrator
+git clone https://github.com/zan-maker/consensus-hardening-protocol.git
+cd consensus-hardening-protocol
 pip install -e .
 cme demo
 ```
@@ -210,7 +210,7 @@ After every agent has contributed, the synthesizer produces:
 ## Repository layout
 
 ```
-cognitive-mesh-orchestrator/
+consensus-hardening-protocol/
 ├── src/
 │   ├── cme/                       # Core framework
 │   │   ├── protocol.py            # Cognitive Mesh Protocol
