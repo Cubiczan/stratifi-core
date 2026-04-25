@@ -88,6 +88,7 @@ PYTHONPATH=src python3 -m cme.cli chp-start \
 Full demo package:
 
 - [CHP_DEMO_VIDEO.md](CHP_DEMO_VIDEO.md)
+- [docs/CHP_FINANCE_PROJECT_ROADMAP.md](docs/CHP_FINANCE_PROJECT_ROADMAP.md)
 - [examples/chp_demo_video.sh](examples/chp_demo_video.sh)
 - [examples/chp_demo_partner_packet.txt](examples/chp_demo_partner_packet.txt)
 - [RELEASE_NOTES_CHP.md](RELEASE_NOTES_CHP.md)
