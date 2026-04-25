@@ -11,3 +11,5 @@ build/
 .vscode/
 .idea/
 *.egg
+.chp_registry.json
+node_modules/

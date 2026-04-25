@@ -8,14 +8,33 @@ from pathlib import Path
 from typing import List
 
 from cme.bridge import EntryPoint
+from cme.cfo_os import (
+    BoardBrief,
+    CFOOperatingSystem,
+    CFOTaskType,
+    ForecastBrief,
+    InvestmentBrief,
+)
 from cme.chp import CHPOrchestrator, DecisionRegistry, Phase, ThirdPartyValidation, ValidationResult
 from cme.context import ContextEngine, Entity, Task
 from cme.finance import (
     CapitalAllocationInput,
+    build_13_week_cash_forecast,
     analyze_variance,
     build_capital_allocation_case,
+    build_cash_forecast_case,
     build_variance_case,
+    export_cash_forecast_input_template,
+    export_cash_forecast_workbook,
+    load_ap_csv,
+    load_cash_forecast_workbook,
+    load_opening_cash_csv,
+    load_outflows_csv,
+    load_payroll_csv,
+    load_sales_csv,
+    load_settings_csv,
     load_variance_csv,
+    render_cash_forecast_markdown,
     render_variance_html,
     render_variance_markdown,
 )
@@ -278,6 +297,190 @@ def _cmd_variance_copilot(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_cash_forecast_13w(args: argparse.Namespace) -> int:
+    if args.input_xlsx:
+        workbook_input = load_cash_forecast_workbook(args.input_xlsx)
+        opening_cash = workbook_input.opening_cash
+        settings = workbook_input.settings
+        sales = workbook_input.sales
+        ap_rows = workbook_input.ap_rows
+        payroll_rows = workbook_input.payroll_rows
+        outflow_rows = workbook_input.outflow_rows
+    else:
+        opening_cash = load_opening_cash_csv(args.opening_cash_csv)
+        settings = load_settings_csv(args.settings_csv)
+        sales = load_sales_csv(args.sales_csv)
+        ap_rows = load_ap_csv(args.ap_csv)
+        payroll_rows = load_payroll_csv(args.payroll_csv)
+        outflow_rows = load_outflows_csv(args.outflows_csv)
+
+    result = build_13_week_cash_forecast(
+        opening_cash=opening_cash,
+        settings=settings,
+        sales=sales,
+        ap_rows=ap_rows,
+        payroll_rows=payroll_rows,
+        outflow_rows=outflow_rows,
+    )
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_cash_forecast_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_cash_forecast_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "forecast": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_xlsx:
+        export_cash_forecast_workbook(
+            result,
+            session_summary=report.render(),
+            output_path=args.out_xlsx,
+        )
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_xlsx:
+        sys.stderr.write(f"[wrote xlsx export to {args.out_xlsx}]\n")
+    return 0
+
+
+def _cmd_cfo_os(args: argparse.Namespace) -> int:
+    registry = DecisionRegistry.load(_registry_path(args))
+    ctx = ContextEngine()
+    _seed_org_context(ctx)
+    cfo = CFOOperatingSystem(
+        agents=_default_agents(),
+        registry=registry,
+        context=ctx,
+        company_name=args.company,
+    )
+
+    task = CFOTaskType(args.task)
+    common = dict(
+        title=args.title,
+        company=args.company,
+        problem=args.problem,
+        owner=args.owner,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+        strategic_priorities=args.priority,
+        constraints=args.constraint,
+    )
+    if task == CFOTaskType.FORECAST:
+        brief = ForecastBrief(
+            **common,
+            base_revenue_usd=args.base_revenue,
+            base_opex_usd=args.base_opex,
+            growth_assumption_pct=args.growth_pct,
+            churn_assumption_pct=args.churn_pct,
+            minimum_runway_months=args.min_runway,
+            current_runway_months=args.current_runway,
+        )
+    elif task == CFOTaskType.INVESTMENT_CASE:
+        brief = InvestmentBrief(
+            **common,
+            investment_amount_usd=args.amount or 0.0,
+            expected_payback_months=args.payback_months or 18,
+            minimum_runway_months=args.min_runway,
+            current_runway_months=args.current_runway,
+            expected_upside=args.upside,
+            key_risks=args.risk,
+        )
+    else:
+        brief = BoardBrief(
+            **common,
+            options=args.option or [],
+            recommended_option_index=args.recommended_index,
+            open_questions=args.open_question,
+            prior_board_decisions=args.prior_decision,
+            strategic_risks=args.risk,
+        )
+
+    report = cfo.run(brief)
+    registry.save(_registry_path(args))
+
+    if args.json:
+        out = {
+            "task": task.value,
+            "decision_id": report.case.decision_id,
+            "lock_state": report.case.status.value,
+            "foundation_score": report.case.foundation_score,
+            "r0_verdict": report.r0_verdict.value,
+            "foundation_verdict": report.foundation_verdict.value,
+            "artifact_markdown": report.artifact.render(),
+            "audit_entries": [
+                {
+                    "agent": e.agent,
+                    "claim": e.claim,
+                    "expansion_label": e.expansion_label,
+                    "grounding_source": e.grounding_source,
+                    "grounding_confidence": e.grounding_confidence,
+                    "risk_flag": e.risk_flag,
+                }
+                for e in report.audit.entries
+            ],
+            "foundation_findings": report.audit.foundation_findings,
+            "case": report.case.to_dict(),
+            "initial_packet": report.initial_packet,
+        }
+        sys.stdout.write(json.dumps(out, indent=2) + "\n")
+    else:
+        sys.stdout.write(report.render() + "\n")
+
+    if args.out_md:
+        Path(args.out_md).write_text(report.render())
+        sys.stderr.write(f"[wrote markdown report to {args.out_md}]\n")
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    return 0
+
+
+def _cmd_cash_forecast_13w_template(args: argparse.Namespace) -> int:
+    if args.from_examples:
+        root = Path(__file__).resolve().parents[2] / "examples" / "cash_13w"
+        workbook = export_cash_forecast_input_template(
+            output_path=args.out_xlsx,
+            opening_cash=load_opening_cash_csv(root / "opening_cash.csv"),
+            settings=load_settings_csv(root / "settings.csv"),
+            sales=load_sales_csv(root / "sales.csv"),
+            ap_rows=load_ap_csv(root / "ap.csv"),
+            payroll_rows=load_payroll_csv(root / "payroll.csv"),
+            outflow_rows=load_outflows_csv(root / "outflows.csv"),
+        )
+    else:
+        workbook = export_cash_forecast_input_template(output_path=args.out_xlsx)
+    sys.stdout.write(f"{workbook}\n")
+    sys.stderr.write(f"[wrote input template to {workbook}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -366,6 +569,74 @@ def build_parser() -> argparse.ArgumentParser:
     variance.add_argument("--out-html", default=None, help="Optional HTML dashboard export path.")
     variance.add_argument("--json", action="store_true")
     variance.set_defaults(func=_cmd_variance_copilot)
+
+    cash13 = sub.add_parser("cash-forecast-13w", help="Run the 13-week cash forecast engine on CSV inputs.")
+    cash13.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    cash13.add_argument("--input-xlsx", default=None, help="Single Excel workbook with required cash forecast sheets.")
+    cash13.add_argument("--opening-cash-csv", default=None)
+    cash13.add_argument("--settings-csv", default=None)
+    cash13.add_argument("--sales-csv", default=None)
+    cash13.add_argument("--ap-csv", default=None)
+    cash13.add_argument("--payroll-csv", default=None)
+    cash13.add_argument("--outflows-csv", default=None)
+    cash13.add_argument("--origin-model", default="GPT-5.4")
+    cash13.add_argument("--partner-model", default="GPT-5-equivalent")
+    cash13.add_argument("--partner-system", default="Partner")
+    cash13.add_argument("--out-md", default=None)
+    cash13.add_argument("--out-json", default=None)
+    cash13.add_argument("--out-xlsx", default=None)
+    cash13.add_argument("--json", action="store_true")
+    cash13.set_defaults(func=_cmd_cash_forecast_13w)
+
+    cfo = sub.add_parser(
+        "cfo-os",
+        help="Run the Multi-Agent CFO Operating System on a forecast/investment/board task.",
+    )
+    cfo.add_argument("--registry", default=".chp_registry.json", help="CHP registry JSON path.")
+    cfo.add_argument(
+        "--task",
+        choices=[t.value for t in CFOTaskType],
+        required=True,
+        help="CFO task type to run.",
+    )
+    cfo.add_argument("--title", required=True, help="Decision title.")
+    cfo.add_argument("--company", default="Aperture Corp", help="Company name.")
+    cfo.add_argument("--problem", required=True, help="Core problem statement.")
+    cfo.add_argument("--owner", default="cfo")
+    cfo.add_argument("--origin-model", default="GPT-5.4")
+    cfo.add_argument("--partner-model", default="GPT-5-equivalent")
+    cfo.add_argument("--partner-system", default="Partner")
+    cfo.add_argument("--priority", action="append", default=[], help="Strategic priority. Repeatable.")
+    cfo.add_argument("--constraint", action="append", default=[], help="Constraint. Repeatable.")
+    cfo.add_argument("--min-runway", type=int, default=12, help="Runway floor in months.")
+    cfo.add_argument("--current-runway", type=int, default=18, help="Current runway in months.")
+
+    # Forecast-only fields
+    cfo.add_argument("--base-revenue", type=float, default=0.0, help="(forecast) base revenue USD.")
+    cfo.add_argument("--base-opex", type=float, default=0.0, help="(forecast) base opex USD.")
+    cfo.add_argument("--growth-pct", type=float, default=0.20, help="(forecast) growth assumption as decimal.")
+    cfo.add_argument("--churn-pct", type=float, default=0.08, help="(forecast) churn assumption as decimal.")
+
+    # Investment-only fields
+    cfo.add_argument("--amount", type=float, default=None, help="(investment_case) investment amount USD.")
+    cfo.add_argument("--payback-months", type=int, default=None, help="(investment_case) expected payback months.")
+    cfo.add_argument("--upside", action="append", default=[], help="(investment_case) expected upside. Repeatable.")
+    cfo.add_argument("--risk", action="append", default=[], help="Key risk. Repeatable.")
+
+    # Board-only fields
+    cfo.add_argument("--option", action="append", default=[], help="(board_output) decision option. Repeatable.")
+    cfo.add_argument("--recommended-index", type=int, default=0, help="(board_output) recommended option index.")
+    cfo.add_argument("--open-question", action="append", default=[], help="(board_output) open question. Repeatable.")
+    cfo.add_argument("--prior-decision", action="append", default=[], help="(board_output) prior board decision. Repeatable.")
+
+    cfo.add_argument("--out-md", default=None, help="Optional markdown export path.")
+    cfo.add_argument("--json", action="store_true", help="Emit JSON instead of Markdown.")
+    cfo.set_defaults(func=_cmd_cfo_os)
+
+    cash13_template = sub.add_parser("cash-forecast-13w-template", help="Create an Excel input workbook template for the 13-week cash forecast engine.")
+    cash13_template.add_argument("--out-xlsx", required=True)
+    cash13_template.add_argument("--from-examples", action="store_true", help="Seed the template with the example dataset.")
+    cash13_template.set_defaults(func=_cmd_cash_forecast_13w_template)
 
     return p
 

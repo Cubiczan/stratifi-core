@@ -1,0 +1,7 @@
+Date,Category,Vendor,AmountUSD,Type
+2026-03-13,Infrastructure,CloudHost,65000,Recurring
+2026-03-18,Rent,HQ Landlord,22000,Recurring
+2026-03-24,Insurance,SureCover,18000,Recurring
+2026-04-02,Capex,PrinterLease,12000,OneOff
+2026-04-16,Marketing,TradeShow,30000,OneOff
+2026-05-14,Taxes,State Revenue,54000,OneOff
