@@ -54,9 +54,23 @@ Both produce a full Markdown orchestration report: problem classification, per-a
 
 ---
 
-## CHP demo
+## Announcing CHP
 
-The repo now also includes a deterministic **Consensus Hardening Protocol (CHP)** walkthrough for capital allocation decisions.
+This repo now includes an early **Consensus Hardening Protocol (CHP)** workflow for capital allocation decisions.
+
+CHP is the start of a new layer on top of the existing mesh:
+
+- turn a finance decision into a structured session instead of a one-shot answer
+- make assumptions, vulnerabilities, and lock states explicit
+- require a partner response and third-party validation before a decision is considered hardened
+
+In the current scaffold, CHP covers:
+
+- session start with a normalized capital allocation dossier
+- context check and model parity assessment
+- R0 and foundation-stage evaluation
+- partner packet ingestion
+- third-party validation with `PROVISIONAL_LOCK -> LOCKED` progression
 
 Quick run:
 
@@ -76,6 +90,7 @@ Full demo package:
 - [CHP_DEMO_VIDEO.md](CHP_DEMO_VIDEO.md)
 - [examples/chp_demo_video.sh](examples/chp_demo_video.sh)
 - [examples/chp_demo_partner_packet.txt](examples/chp_demo_partner_packet.txt)
+- [RELEASE_NOTES_CHP.md](RELEASE_NOTES_CHP.md)
 - [docs/media/README.md](docs/media/README.md)
 
 This flow shows a decision moving from session start to partner packet ingestion to third-party validation and final lock.
@@ -83,6 +98,14 @@ This flow shows a decision moving from session start to partner packet ingestion
 Once recorded, the intended video path is:
 
 - `docs/media/chp-demo.mp4`
+
+Current CHP CLI commands:
+
+```bash
+PYTHONPATH=src python3 -m cme.cli chp-start
+PYTHONPATH=src python3 -m cme.cli chp-receive
+PYTHONPATH=src python3 -m cme.cli chp-validate
+```
 
 ---
 
