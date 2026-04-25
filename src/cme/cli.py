@@ -18,8 +18,11 @@ from cme.cfo_os import (
 from cme.chp import CHPOrchestrator, DecisionRegistry, Phase, ThirdPartyValidation, ValidationResult
 from cme.context import ContextEngine, Entity, Task
 from cme.finance import (
+    BoardReportInput,
     OperatingModelAssumptions,
     CapitalAllocationInput,
+    build_board_report,
+    build_board_reporting_case,
     build_13_week_cash_forecast,
     build_24_month_saas_operating_model,
     analyze_variance,
@@ -27,11 +30,13 @@ from cme.finance import (
     build_cash_forecast_case,
     build_saas_operating_model_case,
     build_variance_case,
+    export_board_report_pptx,
     export_cash_forecast_input_template,
     export_cash_forecast_workbook,
     export_saas_operating_model_workbook,
     load_ap_csv,
     load_cash_forecast_workbook,
+    load_board_report_input,
     load_mrr_history_csv,
     load_opening_cash_csv,
     load_outflows_csv,
@@ -39,6 +44,7 @@ from cme.finance import (
     load_sales_csv,
     load_settings_csv,
     load_variance_csv,
+    render_board_report_markdown,
     render_cash_forecast_markdown,
     render_saas_operating_model_markdown,
     render_variance_html,
@@ -560,6 +566,58 @@ def _cmd_saas_model_24m(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_board_reporting_generator(args: argparse.Namespace) -> int:
+    payload: BoardReportInput = load_board_report_input(args.input_json)
+    result = build_board_report(payload)
+
+    registry = DecisionRegistry.load(_registry_path(args))
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_board_reporting_case(
+        result,
+        origin_model=args.origin_model,
+        partner_model=args.partner_model,
+        partner_system=args.partner_system,
+    )
+    report = orch.run_initial_session(
+        case=case,
+        foundation_disclosure=disclosure,
+        foundation_attack=attack,
+    )
+    registry.save(_registry_path(args))
+
+    markdown_output = render_board_report_markdown(result) + "\n\n" + report.render() + "\n"
+    json_output = {
+        "board_report": result.to_dict(),
+        "case": report.case.to_dict(),
+        "r0_verdict": report.r0_verdict.value,
+        "foundation_verdict": report.foundation_verdict.value,
+        "initial_packet": report.initial_packet,
+    }
+    if args.out_md:
+        Path(args.out_md).write_text(markdown_output)
+    if args.out_json:
+        Path(args.out_json).write_text(json.dumps(json_output, indent=2))
+    if args.out_pptx:
+        export_board_report_pptx(
+            result,
+            session_summary=report.render(),
+            output_path=args.out_pptx,
+        )
+
+    if args.json:
+        sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
+    else:
+        sys.stdout.write(markdown_output)
+    sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
+    if args.out_md:
+        sys.stderr.write(f"[wrote markdown export to {args.out_md}]\n")
+    if args.out_json:
+        sys.stderr.write(f"[wrote json export to {args.out_json}]\n")
+    if args.out_pptx:
+        sys.stderr.write(f"[wrote pptx export to {args.out_pptx}]\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cme",
@@ -747,6 +805,18 @@ def build_parser() -> argparse.ArgumentParser:
     saas24.add_argument("--out-xlsx", default=None)
     saas24.add_argument("--json", action="store_true")
     saas24.set_defaults(func=_cmd_saas_model_24m)
+
+    board = sub.add_parser("board-reporting-generator", help="Generate a board-ready reporting package and PPTX deck.")
+    board.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
+    board.add_argument("--input-json", required=True, help="Structured board input JSON.")
+    board.add_argument("--origin-model", default="GPT-5.4")
+    board.add_argument("--partner-model", default="GPT-5-equivalent")
+    board.add_argument("--partner-system", default="Partner")
+    board.add_argument("--out-md", default=None)
+    board.add_argument("--out-json", default=None)
+    board.add_argument("--out-pptx", default=None)
+    board.add_argument("--json", action="store_true")
+    board.set_defaults(func=_cmd_board_reporting_generator)
 
     return p
 

@@ -1,0 +1,83 @@
+{
+  "company_name": "coolreports.ai",
+  "quarter_label": "Q4 FY2026",
+  "board_meeting_date": "2026-05-15",
+  "business_model": "Subscription analytics platform serving mid-market operations teams through annual SaaS contracts.",
+  "goals": [
+    "Sustain durable ARR growth while protecting gross margin",
+    "Tighten burn discipline ahead of the next financing window",
+    "Reduce implementation friction for enterprise accounts"
+  ],
+  "financial_highlights": [
+    {
+      "name": "ARR",
+      "actual": 42.6,
+      "plan": 41.8,
+      "prior": 39.7,
+      "unit": "usd_m",
+      "commentary": "Expansion in the installed base offset softer new-logo timing."
+    },
+    {
+      "name": "Gross Margin",
+      "actual": 0.704,
+      "plan": 0.715,
+      "prior": 0.688,
+      "unit": "pct",
+      "commentary": "Hosting credits helped sequentially, but support mix remains a drag versus plan."
+    },
+    {
+      "name": "Burn",
+      "actual": 2.4,
+      "plan": 2.1,
+      "prior": 2.0,
+      "unit": "usd_m",
+      "commentary": "Hiring overlap and implementation services spend drove the miss."
+    },
+    {
+      "name": "Runway",
+      "actual": 17.8,
+      "plan": 18.6,
+      "prior": 19.4,
+      "unit": "months",
+      "commentary": "Runway remains manageable, but the board should watch burn conversion closely."
+    }
+  ],
+  "trend_series": [
+    {
+      "name": "ARR Trend",
+      "labels": ["Q1", "Q2", "Q3", "Q4"],
+      "actual": [36.2, 38.0, 39.7, 42.6],
+      "plan": [35.9, 37.5, 40.1, 41.8],
+      "unit": "usd_m"
+    }
+  ],
+  "top_drivers": [
+    "Expansion ARR in the top 50 accounts outperformed plan.",
+    "Implementation backlog conversion improved in the second half of the quarter.",
+    "Pricing realization held despite competitive pressure."
+  ],
+  "top_risks": [
+    "Enterprise deployment complexity is extending time-to-value in the largest deals.",
+    "Burn discipline is under pressure from overlapping hiring and services costs.",
+    "Pipeline coverage for the next two quarters is still concentrated in a few verticals."
+  ],
+  "top_actions": [
+    "Pause non-critical hiring until implementation productivity improves.",
+    "Standardize enterprise onboarding milestones with weekly CFO/COO review.",
+    "Rebalance pipeline generation toward under-covered verticals."
+  ],
+  "strategic_updates": [
+    "Enterprise packaging launched with strong customer interest but uneven deployment readiness.",
+    "Gross retention improved after support workflow changes in the mid-market segment.",
+    "Product analytics roadmap is now tied directly to expansion playbooks for top accounts."
+  ],
+  "outlook": [
+    "Management expects ARR growth to remain intact if deployment cycle times stabilize.",
+    "Burn should improve over the next two quarters as hiring normalizes and backlog converts.",
+    "The board should focus on implementation capacity, pipeline diversity, and gross margin mix."
+  ],
+  "leadership_notes": [
+    "Keep the board narrative direct and avoid abstract strategy language without numbers.",
+    "Reinforce accountability on the implementation bottleneck."
+  ]
+}
