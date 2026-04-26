@@ -32,31 +32,58 @@ from cme.chp.payloads import (
     payload_echo_confirmed,
     validate_payload_envelope,
 )
+from cme.chp.accuracy import CFOAccuracyPolicy, FinancialAnalysisGuard, FinancialAnalysisGuardResult
+from cme.chp.adversary_agent import AdversaryMeshAgent
+from cme.chp.contracts import (
+    ConvergenceClosure,
+    CouncilSpawn,
+    InterruptionRecovery,
+    ItemAgreement,
+    OriginPacketContract,
+    PartnerPacket,
+    ScoringOption,
+    VerificationChecklist,
+)
 from cme.chp.gates import evaluate_phase_gate, evaluate_r0_gate
 from cme.chp.orchestrator import CHPOrchestrator, CHPReport
 from cme.chp.registry import DecisionRegistry
+from cme.chp.runner import TriangulationResult, TriangulationRunner
 from cme.chp.validators import apply_third_party_validation
 
 __all__ = [
+    "AdversaryMeshAgent",
+    "CFOAccuracyPolicy",
     "ContextCheck",
+    "ConvergenceClosure",
+    "CouncilSpawn",
     "DecisionCase",
     "DecisionRegistry",
     "DevilsAdvocateRound",
     "Dossier",
+    "FinancialAnalysisGuard",
+    "FinancialAnalysisGuardResult",
     "FoundationAttack",
     "FoundationDisclosure",
     "CHPOrchestrator",
     "CHPReport",
+    "InterruptionRecovery",
+    "ItemAgreement",
     "ModelParityCheck",
     "ModelTier",
+    "OriginPacketContract",
+    "PartnerPacket",
     "Phase",
     "PayloadEnvelope",
     "RoundRecord",
+    "ScoringOption",
     "SessionStatus",
     "StateSnapshot",
     "ThirdPartyValidation",
+    "TriangulationResult",
+    "TriangulationRunner",
     "VCLDiagnosis",
     "ValidationResult",
+    "VerificationChecklist",
     "Verdict",
     "apply_third_party_validation",
     "assess_model_parity",

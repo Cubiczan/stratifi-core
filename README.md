@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/demo.mp4
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-42%20passing-brightgreen)](tests/)
 
 ---
 
@@ -72,14 +72,22 @@ The current implementation covers:
 - Phase 1 gate enforcement before implementation rounds
 - Round 5 `PROVISIONAL -> UNRESOLVED` forcing
 - `PROVISIONAL_LOCK -> LOCKED` progression only after third-party validation
+- strict origin 3-section contract checks
+- structured partner packet primitives for item agreements, scoring tables, flip criteria, and state snapshots
+- single-winner scoring validation, ASCII-only packet checks, verification checklist runner, and max-5-round enforcement
+- council-spawn and convergence-closure primitives for high-stakes low-confidence sessions
+- standalone `TriangulationRunner` adversary/fact-check pass
+- `AdversaryMeshAgent` wrapper for plugging the adversary into mesh orchestration
+- mandatory `FinancialAnalysisGuard` for finance CLI workflows
+- CFO accuracy policy that demotes unresolved finance outputs to `REQUIRES_HUMAN_VERIFICATION`
 
 The core state model lives in [`src/cme/chp`](src/cme/chp). The CFO operating layer that uses it with finance, strategy, and compliance agents lives in [`src/cme/cfo_os`](src/cme/cfo_os).
 
 Current remaining protocol work:
 
-- exact partner 7-section parser/enforcer
-- council spawn execution for high-stakes low-confidence sessions
-- final convergence closure with URLs, blind-spot final audit, and structural-vulnerability final audit
+- raw text parser for converting partner 7-section packets into the structured packet model
+- multi-model council execution beyond the current council-spawn primitive
+- hosted session URL exchange and release-grade closure reporting around the current convergence-closure primitive
 
 Quick run:
 
@@ -115,6 +123,7 @@ Current CHP CLI commands:
 PYTHONPATH=src python3 -m cme.cli chp-start
 PYTHONPATH=src python3 -m cme.cli chp-receive
 PYTHONPATH=src python3 -m cme.cli chp-validate
+PYTHONPATH=src python3 -m cme.cli chp-triangulate --claim "EBITDA improves by 20%"
 ```
 
 ---
@@ -122,6 +131,8 @@ PYTHONPATH=src python3 -m cme.cli chp-validate
 ## CFO Workflow Suite
 
 CHP now ships with a CFO workflow suite. Each workflow creates a finance artifact and attaches a CHP session so the output is auditable before it becomes a decision record.
+
+For finance workflows, the policy is mandatory: every CLI analysis runs CHP and then spawns the `TriangulationRunner` adversary pass. Because CFO-grade work has a 100% verification floor, any foundation score below `100`, any open structural vulnerability, or any open blind spot blocks final lock and marks the case `REQUIRES_HUMAN_VERIFICATION`.
 
 | Workflow | CLI command | Output artifacts |
 |---|---|---|
@@ -328,6 +339,7 @@ cme context                    # Dump the seeded organizational context
 cme chp-start                  # Start a CHP capital allocation session
 cme chp-receive                # Attach a partner packet to an existing CHP decision
 cme chp-validate               # Apply third-party validation to a CHP decision
+cme chp-triangulate            # Standalone adversary/fact-check pass for a claim
 
 cme variance-studio            # Monthly actual-vs-budget variance analysis
 cme cash-forecast-13w          # 13-week cash forecast
@@ -350,7 +362,7 @@ pip install pytest
 PYTHONPATH=src pytest tests/ -v
 ```
 
-The focused suite currently has 34 passing tests covering protocol rendering, payload integrity, gate enforcement, lock progression, context reuse, CFO OS behavior, workbook/deck exporters, and the finance workflow engines.
+The focused suite currently has 42 passing tests covering protocol rendering, payload integrity, gate enforcement, lock progression, context reuse, strict packet contracts, the adversary runner, CFO accuracy guard, CFO OS behavior, workbook/deck exporters, and the finance workflow engines.
 
 ---
 

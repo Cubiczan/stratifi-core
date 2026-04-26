@@ -16,7 +16,15 @@ from cme.cfo_os import (
     ForecastBrief,
     InvestmentBrief,
 )
-from cme.chp import CHPOrchestrator, DecisionRegistry, Phase, ThirdPartyValidation, ValidationResult
+from cme.chp import (
+    CHPOrchestrator,
+    DecisionRegistry,
+    FinancialAnalysisGuard,
+    Phase,
+    ThirdPartyValidation,
+    TriangulationRunner,
+    ValidationResult,
+)
 from cme.context import ContextEngine, Entity, Task
 from cme.finance import (
     BoardReportInput,
@@ -78,6 +86,23 @@ from cme.orchestrator import EnterpriseOrchestrator
 
 def _registry_path(args: argparse.Namespace) -> Path:
     return Path(getattr(args, "registry", ".chp_registry.json"))
+
+
+def _guard_financial_analysis(report, *, claim: str, context: str = ""):
+    guard = FinancialAnalysisGuard()
+    return guard.guard_case(report.case, claim=claim, context=context)
+
+
+def _guard_to_dict(guard_result) -> dict:
+    return {
+        "requires_human_verification": guard_result.requires_human_verification,
+        "violations": guard_result.violations,
+        "triangulation": {
+            "status": guard_result.triangulation.status.value,
+            "foundation_score": guard_result.triangulation.report.case.foundation_score,
+            "findings": guard_result.triangulation.adversary_findings,
+        },
+    }
 
 
 def _default_agents() -> List:
@@ -198,6 +223,8 @@ def _cmd_chp_start(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    guard_result = _guard_financial_analysis(report, claim=args.problem, context=report.render())
+    registry.save(_registry_path(args))
     if args.json:
         out = {
             "case": report.case.to_dict(),
@@ -216,11 +243,11 @@ def _cmd_chp_start(args: argparse.Namespace) -> int:
             "r0_verdict": report.r0_verdict.value,
             "foundation_verdict": report.foundation_verdict.value,
             "initial_packet": report.initial_packet,
+            "accuracy_guard": _guard_to_dict(guard_result),
         }
         sys.stdout.write(json.dumps(out, indent=2) + "\n")
     else:
-        sys.stdout.write(report.render() + "\n")
-    registry.save(_registry_path(args))
+        sys.stdout.write(report.render() + "\n\n" + guard_result.render() + "\n")
     sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
     return 0
 
@@ -261,15 +288,58 @@ def _cmd_chp_validate(args: argparse.Namespace) -> int:
         rationale=args.rationale,
     )
     case = orch.apply_validation(args.decision_id, validation)
+    guard_result = None
+    if case.domain in {
+        "capital_allocation",
+        "forecast",
+        "board_decision",
+        "variance_studio",
+        "cash_forecast_13w",
+        "saas_operating_model",
+        "board_reporting",
+        "ap_optimizer",
+        "decision_impact_simulator",
+        "saas_kpi_dashboard",
+        "investment_committee",
+    }:
+        guard = FinancialAnalysisGuard()
+        guard_result = guard.guard_case(case, claim=case.title, context=json.dumps(case.to_dict(), indent=2))
     registry.save(_registry_path(args))
     if args.json:
-        sys.stdout.write(json.dumps(case.to_dict(), indent=2) + "\n")
+        out = {"case": case.to_dict()}
+        if guard_result:
+            out["accuracy_guard"] = _guard_to_dict(guard_result)
+        sys.stdout.write(json.dumps(out, indent=2) + "\n")
     else:
         sys.stdout.write(
             f"Validated {case.decision_id}\n"
             f"status={case.status.value}\n"
             f"locked={', '.join(case.locked_decisions) or 'NONE'}\n"
         )
+        if guard_result:
+            sys.stdout.write(guard_result.render() + "\n")
+    return 0
+
+
+def _cmd_chp_triangulate(args: argparse.Namespace) -> int:
+    context = Path(args.context_file).read_text() if args.context_file else args.context
+    result = TriangulationRunner.as_adversary(
+        args.claim,
+        context=context,
+        high_stakes=not args.not_high_stakes,
+    )
+    if args.json:
+        out = {
+            "claim": result.claim,
+            "status": result.status.value,
+            "case": result.report.case.to_dict(),
+            "adversary_findings": result.adversary_findings,
+            "council_spawn": result.council_spawn.__dict__ if result.council_spawn else None,
+            "verification_failures": result.verification.failures() if result.verification else [],
+        }
+        sys.stdout.write(json.dumps(out, indent=2) + "\n")
+    else:
+        sys.stdout.write(result.render() + "\n\n" + result.report.render() + "\n")
     return 0
 
 
@@ -300,15 +370,19 @@ def _cmd_variance_copilot(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_variance_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim=result.ceo_narrative, context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_variance_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "analysis": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
 
     if args.out_md:
@@ -316,7 +390,7 @@ def _cmd_variance_copilot(args: argparse.Namespace) -> int:
     if args.out_json:
         Path(args.out_json).write_text(json.dumps(json_output, indent=2))
     if args.out_html:
-        Path(args.out_html).write_text(render_variance_html(result, session_summary=report.render()))
+        Path(args.out_html).write_text(render_variance_html(result, session_summary=session_summary))
 
     if args.json:
         sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
@@ -371,15 +445,19 @@ def _cmd_cash_forecast_13w(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_cash_forecast_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim="13-week cash forecast", context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_cash_forecast_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "forecast": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
@@ -388,7 +466,7 @@ def _cmd_cash_forecast_13w(args: argparse.Namespace) -> int:
     if args.out_xlsx:
         export_cash_forecast_workbook(
             result,
-            session_summary=report.render(),
+            session_summary=session_summary,
             output_path=args.out_xlsx,
         )
 
@@ -460,6 +538,7 @@ def _cmd_cfo_os(args: argparse.Namespace) -> int:
         )
 
     report = cfo.run(brief)
+    guard_result = _guard_financial_analysis(report, claim=brief.problem, context=report.render())
     registry.save(_registry_path(args))
 
     if args.json:
@@ -485,13 +564,14 @@ def _cmd_cfo_os(args: argparse.Namespace) -> int:
             "foundation_findings": report.audit.foundation_findings,
             "case": report.case.to_dict(),
             "initial_packet": report.initial_packet,
+            "accuracy_guard": _guard_to_dict(guard_result),
         }
         sys.stdout.write(json.dumps(out, indent=2) + "\n")
     else:
-        sys.stdout.write(report.render() + "\n")
+        sys.stdout.write(report.render() + "\n\n" + guard_result.render() + "\n")
 
     if args.out_md:
-        Path(args.out_md).write_text(report.render())
+        Path(args.out_md).write_text(report.render() + "\n\n" + guard_result.render() + "\n")
         sys.stderr.write(f"[wrote markdown report to {args.out_md}]\n")
     sys.stderr.write(f"[saved CHP registry to {_registry_path(args)}]\n")
     return 0
@@ -554,15 +634,19 @@ def _cmd_saas_model_24m(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_saas_operating_model_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim="24-month SaaS operating model", context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_saas_operating_model_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "model": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
@@ -571,7 +655,7 @@ def _cmd_saas_model_24m(args: argparse.Namespace) -> int:
     if args.out_xlsx:
         export_saas_operating_model_workbook(
             result,
-            session_summary=report.render(),
+            session_summary=session_summary,
             output_path=args.out_xlsx,
         )
 
@@ -606,15 +690,19 @@ def _cmd_board_reporting_generator(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_board_report_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim=result.executive_takeaway, context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_board_report_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "board_report": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
@@ -623,7 +711,7 @@ def _cmd_board_reporting_generator(args: argparse.Namespace) -> int:
     if args.out_pptx:
         export_board_report_pptx(
             result,
-            session_summary=report.render(),
+            session_summary=session_summary,
             output_path=args.out_pptx,
         )
 
@@ -666,15 +754,19 @@ def _cmd_ap_optimizer(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_ap_optimizer_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim="AP cash and payables optimizer recommendation", context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_ap_optimizer_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "optimizer": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
@@ -683,7 +775,7 @@ def _cmd_ap_optimizer(args: argparse.Namespace) -> int:
     if args.out_xlsx:
         export_ap_optimizer_workbook(
             result,
-            session_summary=report.render(),
+            session_summary=session_summary,
             output_path=args.out_xlsx,
         )
 
@@ -741,22 +833,26 @@ def _cmd_decision_impact_simulator(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_decision_impact_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim=result.commentary, context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_decision_impact_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "simulation": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
     if args.out_json:
         Path(args.out_json).write_text(json.dumps(json_output, indent=2))
     if args.out_html:
-        Path(args.out_html).write_text(render_decision_impact_html(result, session_summary=report.render()))
+        Path(args.out_html).write_text(render_decision_impact_html(result, session_summary=session_summary))
 
     if args.json:
         sys.stdout.write(json.dumps(json_output, indent=2) + "\n")
@@ -790,26 +886,30 @@ def _cmd_saas_kpi_dashboard(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_saas_kpi_dashboard_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim="SaaS KPI dashboard", context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_saas_kpi_dashboard_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "dashboard": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
     if args.out_json:
         Path(args.out_json).write_text(json.dumps(json_output, indent=2))
     if args.out_html:
-        Path(args.out_html).write_text(render_saas_kpi_dashboard_html(result, session_summary=report.render()))
+        Path(args.out_html).write_text(render_saas_kpi_dashboard_html(result, session_summary=session_summary))
     if args.out_xlsx:
         export_saas_kpi_dashboard_workbook(
             result,
-            session_summary=report.render(),
+            session_summary=session_summary,
             output_path=args.out_xlsx,
         )
 
@@ -846,15 +946,19 @@ def _cmd_investment_committee(args: argparse.Namespace) -> int:
         foundation_disclosure=disclosure,
         foundation_attack=attack,
     )
+    analysis_markdown = render_investment_committee_markdown(result)
+    guard_result = _guard_financial_analysis(report, claim=result.recommendation, context=analysis_markdown)
     registry.save(_registry_path(args))
 
-    markdown_output = render_investment_committee_markdown(result) + "\n\n" + report.render() + "\n"
+    session_summary = report.render() + "\n\n" + guard_result.render()
+    markdown_output = analysis_markdown + "\n\n" + session_summary + "\n"
     json_output = {
         "committee": result.to_dict(),
         "case": report.case.to_dict(),
         "r0_verdict": report.r0_verdict.value,
         "foundation_verdict": report.foundation_verdict.value,
         "initial_packet": report.initial_packet,
+        "accuracy_guard": _guard_to_dict(guard_result),
     }
     if args.out_md:
         Path(args.out_md).write_text(markdown_output)
@@ -863,7 +967,7 @@ def _cmd_investment_committee(args: argparse.Namespace) -> int:
     if args.out_xlsx:
         export_investment_committee_workbook(
             result,
-            session_summary=report.render(),
+            session_summary=session_summary,
             output_path=args.out_xlsx,
         )
 
@@ -951,6 +1055,14 @@ def build_parser() -> argparse.ArgumentParser:
     chp_validate.add_argument("--rationale", required=True)
     chp_validate.add_argument("--json", action="store_true")
     chp_validate.set_defaults(func=_cmd_chp_validate)
+
+    chp_tri = sub.add_parser("chp-triangulate", help="Run a standalone CHP adversary/fact-check pass on a claim.")
+    chp_tri.add_argument("--claim", required=True, help="Claim or recommendation to attack.")
+    chp_tri.add_argument("--context", default="", help="Optional context string.")
+    chp_tri.add_argument("--context-file", default=None, help="Optional file containing context for the claim.")
+    chp_tri.add_argument("--not-high-stakes", action="store_true", help="Disable high-stakes council-spawn trigger.")
+    chp_tri.add_argument("--json", action="store_true")
+    chp_tri.set_defaults(func=_cmd_chp_triangulate)
 
     variance = sub.add_parser("variance-studio", help="Run the Monthly CFO Variance Studio on a CSV file.")
     variance.add_argument("--registry", default=".chp_registry.json", help="Registry JSON path.")
