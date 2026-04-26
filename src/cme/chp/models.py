@@ -47,6 +47,119 @@ class ModelTier(str, Enum):
 
 
 @dataclass
+class DevilsAdvocateRound:
+    phase: Phase
+    round_number: int
+    why_direction_wrong: str
+    what_not_seeing: str
+    false_consensus_risk: str
+    structural_vulnerabilities: List[str] = field(default_factory=list)
+
+    def validate(self) -> List[str]:
+        errors: List[str] = []
+        if not self.why_direction_wrong:
+            errors.append("why_direction_wrong is required")
+        if not self.what_not_seeing:
+            errors.append("what_not_seeing is required")
+        if not self.false_consensus_risk:
+            errors.append("false_consensus_risk is required")
+        if len(self.structural_vulnerabilities) > 3:
+            errors.append("structural_vulnerabilities is limited to three items")
+        return errors
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = asdict(self)
+        data["phase"] = self.phase.value
+        return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DevilsAdvocateRound":
+        return cls(
+            phase=Phase(data["phase"]),
+            round_number=data["round_number"],
+            why_direction_wrong=data["why_direction_wrong"],
+            what_not_seeing=data["what_not_seeing"],
+            false_consensus_risk=data["false_consensus_risk"],
+            structural_vulnerabilities=list(data.get("structural_vulnerabilities", [])),
+        )
+
+
+@dataclass
+class VCLDiagnosis:
+    item: str
+    symptom_altitude: str
+    constraint_altitude: str
+    diagnosis: str
+
+    def validate(self) -> List[str]:
+        errors: List[str] = []
+        allowed = {f"R{i}" for i in range(1, 11)}
+        if self.symptom_altitude.split()[0] not in allowed:
+            errors.append("symptom_altitude must start with R1-R10")
+        if self.constraint_altitude.split()[0] not in allowed:
+            errors.append("constraint_altitude must start with R1-R10")
+        if not self.diagnosis:
+            errors.append("diagnosis is required")
+        return errors
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VCLDiagnosis":
+        return cls(**data)
+
+
+@dataclass
+class StateSnapshot:
+    phase: Phase
+    round_number: int
+    status: SessionStatus
+    payload_echo: str
+    foundation_score: Optional[int] = None
+    locked: List[str] = field(default_factory=list)
+    provisional: List[str] = field(default_factory=list)
+    provisional_lock: List[str] = field(default_factory=list)
+    flip_active: List[str] = field(default_factory=list)
+    blind_spots_acknowledged: Dict[str, List[str]] = field(default_factory=dict)
+    structural_vulnerabilities: List[str] = field(default_factory=list)
+    third_party_pending: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "PHASE": self.phase.value,
+            "ROUND": f"{self.round_number}/5",
+            "STATUS": self.status.value,
+            "PAYLOAD_ECHO": self.payload_echo,
+            "FOUNDATION_SCORE": self.foundation_score,
+            "LOCKED": self.locked,
+            "PROVISIONAL": self.provisional,
+            "PROVISIONAL_LOCK": self.provisional_lock,
+            "FLIP_ACTIVE": self.flip_active,
+            "BLIND_SPOTS_ACKNOWLEDGED": self.blind_spots_acknowledged,
+            "STRUCTURAL_VULNERABILITIES": self.structural_vulnerabilities,
+            "THIRD_PARTY_PENDING": self.third_party_pending,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "StateSnapshot":
+        return cls(
+            phase=Phase(data["PHASE"]),
+            round_number=int(str(data["ROUND"]).split("/", 1)[0]),
+            status=SessionStatus(data["STATUS"]),
+            payload_echo=data["PAYLOAD_ECHO"],
+            foundation_score=data.get("FOUNDATION_SCORE"),
+            locked=list(data.get("LOCKED", [])),
+            provisional=list(data.get("PROVISIONAL", [])),
+            provisional_lock=list(data.get("PROVISIONAL_LOCK", [])),
+            flip_active=list(data.get("FLIP_ACTIVE", [])),
+            blind_spots_acknowledged=dict(data.get("BLIND_SPOTS_ACKNOWLEDGED", {})),
+            structural_vulnerabilities=list(data.get("STRUCTURAL_VULNERABILITIES", [])),
+            third_party_pending=list(data.get("THIRD_PARTY_PENDING", [])),
+        )
+
+
+@dataclass
 class ContextCheck:
     memory_tools: str = "UNAVAILABLE"
     prior_sessions_count: int = 0
@@ -233,6 +346,9 @@ class DecisionCase:
     structural_vulnerabilities: List[str] = field(default_factory=list)
     blind_spots: List[str] = field(default_factory=list)
     flip_criteria: List[str] = field(default_factory=list)
+    devil_advocate_rounds: List[DevilsAdvocateRound] = field(default_factory=list)
+    vcl_diagnoses: List[VCLDiagnosis] = field(default_factory=list)
+    state_snapshots: List[StateSnapshot] = field(default_factory=list)
     third_party_log: List[ThirdPartyValidation] = field(default_factory=list)
     rounds: List[RoundRecord] = field(default_factory=list)
 
@@ -264,6 +380,9 @@ class DecisionCase:
             "structural_vulnerabilities": self.structural_vulnerabilities,
             "blind_spots": self.blind_spots,
             "flip_criteria": self.flip_criteria,
+            "devil_advocate_rounds": [item.to_dict() for item in self.devil_advocate_rounds],
+            "vcl_diagnoses": [item.to_dict() for item in self.vcl_diagnoses],
+            "state_snapshots": [item.to_dict() for item in self.state_snapshots],
             "third_party_log": [item.to_dict() for item in self.third_party_log],
             "rounds": [record.to_dict() for record in self.rounds],
         }
@@ -292,6 +411,11 @@ class DecisionCase:
             structural_vulnerabilities=list(data.get("structural_vulnerabilities", [])),
             blind_spots=list(data.get("blind_spots", [])),
             flip_criteria=list(data.get("flip_criteria", [])),
+            devil_advocate_rounds=[
+                DevilsAdvocateRound.from_dict(item) for item in data.get("devil_advocate_rounds", [])
+            ],
+            vcl_diagnoses=[VCLDiagnosis.from_dict(item) for item in data.get("vcl_diagnoses", [])],
+            state_snapshots=[StateSnapshot.from_dict(item) for item in data.get("state_snapshots", [])],
             third_party_log=[ThirdPartyValidation.from_dict(item) for item in data.get("third_party_log", [])],
             rounds=[RoundRecord.from_dict(item) for item in data.get("rounds", [])],
         )

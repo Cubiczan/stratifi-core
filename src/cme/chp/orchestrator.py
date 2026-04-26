@@ -4,6 +4,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from cme.chp.devil import (
+    build_phase0_devils_advocate,
+    build_round3_devils_advocate,
+    build_state_snapshot,
+    build_vcl_diagnoses,
+    merge_structural_vulnerabilities,
+)
 from cme.chp.foundation import foundation_verdict, validate_foundation_pair
 from cme.chp.gates import evaluate_phase_gate, evaluate_r0_gate
 from cme.chp.models import (
@@ -118,6 +125,7 @@ class CHPOrchestrator:
         if case.dossier:
             case.dossier.foundation_score = foundation_attack.foundation_score
             case.structural_vulnerabilities = list(case.dossier.structural_vulnerabilities)
+            case.vcl_diagnoses = build_vcl_diagnoses(case)
 
         if case.context_check.action == "HALT_DUPLICATE":
             case.status = SessionStatus.HALT
@@ -132,7 +140,25 @@ class CHPOrchestrator:
 
         packet = ""
         if case.status not in {SessionStatus.HALT, SessionStatus.REFRAME_REQUIRED}:
+            devil_round = build_phase0_devils_advocate(foundation_disclosure, foundation_attack)
+            devil_errors = devil_round.validate()
+            if devil_errors:
+                raise ValueError("; ".join(devil_errors))
+            case.devil_advocate_rounds.append(devil_round)
+            case.structural_vulnerabilities = merge_structural_vulnerabilities(
+                case.structural_vulnerabilities,
+                devil_round.structural_vulnerabilities,
+            )
             packet = self._build_initial_packet(case, foundation_disclosure, foundation_attack, r0.verdict, f_verdict)
+            payload_id = extract_payload_id(packet) or "UNKNOWN"
+            case.state_snapshots.append(
+                build_state_snapshot(
+                    case,
+                    payload_echo=f"[RX] [{payload_id}] ORIGIN_SENT",
+                    phase=Phase.FOUNDATION,
+                    round_number=0,
+                )
+            )
         if case.context_check.action != "HALT_DUPLICATE":
             self.registry.add(case)
         return CHPReport(
@@ -164,10 +190,30 @@ class CHPOrchestrator:
             raise ValueError("partner packet is missing a payload id")
         if not payload_echo or not payload_echo_confirmed("RX", payload_id, payload_echo):
             raise ValueError("partner packet is missing a matching PAYLOAD_ECHO confirmation")
+        incoming_status = SessionStatus(snapshot_status)
+        if round_number >= 5 and incoming_status == SessionStatus.PROVISIONAL:
+            incoming_status = SessionStatus.UNRESOLVED
         phase_gate = evaluate_phase_gate(round_number, case.status)
         if phase_gate == Verdict.PHASE_GATE_FAIL:
             case.status = SessionStatus.HALT
             raise ValueError("cannot enter implementation before Phase 1 reaches PROVISIONAL_LOCK or LOCKED")
+        if phase == Phase.IMPLEMENTATION and round_number == 3:
+            devil_round = build_round3_devils_advocate(case)
+            devil_errors = devil_round.validate()
+            if devil_errors:
+                raise ValueError("; ".join(devil_errors))
+            case.devil_advocate_rounds.append(devil_round)
+            case.structural_vulnerabilities = merge_structural_vulnerabilities(
+                case.structural_vulnerabilities,
+                devil_round.structural_vulnerabilities,
+            )
+        snapshot = build_state_snapshot(
+            case,
+            payload_echo=payload_echo,
+            phase=phase,
+            round_number=round_number,
+            status=incoming_status,
+        )
         record = RoundRecord(
             decision_id=decision_id,
             phase=phase,
@@ -175,13 +221,11 @@ class CHPOrchestrator:
             payload_id=payload_id,
             partner_packet=partner_packet,
             payload_echo_confirmed=True,
-            state_snapshot={
-                "status": snapshot_status,
-                "payload_echo": payload_echo,
-            },
+            state_snapshot=snapshot.to_dict(),
         )
         case.add_round(record)
-        case.status = SessionStatus(snapshot_status)
+        case.status = incoming_status
+        case.state_snapshots.append(snapshot)
         return case
 
     def apply_validation(self, decision_id: str, validation) -> DecisionCase:
@@ -226,12 +270,18 @@ class CHPOrchestrator:
     ) -> str:
         dossier = case.dossier.to_dict() if case.dossier else {}
         body_lines = [
+            "1. CORE_PROBLEM_STATEMENT",
+            dossier.get("core_problem", "UNKNOWN"),
+            "",
+            "2. PARTNER_SYSTEM_PACKET",
             f"From: {case.origin_system}",
             f"To: {case.partner_system}",
             "Subject: CHP - Phase 0 Round 0",
             "",
-            "CORE_PROBLEM_STATEMENT:",
-            dossier.get("core_problem", "UNKNOWN"),
+            "STYLE_GUIDE:",
+            "- Tone: Calm, spec-like",
+            "- Framing: does not X unless Y",
+            "- ASCII only",
             "",
             "R0_GATE:",
             f"- verdict: {r0_verdict.value}",
@@ -254,6 +304,28 @@ class CHPOrchestrator:
                 "",
                 "DOSSIER:",
                 str(dossier),
+            ]
+        )
+        body_lines.append("VCL_DIAGNOSIS:")
+        for item in case.vcl_diagnoses or []:
+            body_lines.append(
+                f"- {item.item}: symptom={item.symptom_altitude}; constraint={item.constraint_altitude}; diagnosis={item.diagnosis}"
+            )
+        body_lines.extend(
+            [
+                "",
+                "SHAPE_LOCK:",
+                "- Return one payload envelope with From, To, Subject headers.",
+                "- Phase 0 response must include FOUNDATION_ATTACK and STATE_SNAPSHOT.",
+                "- Standard rounds must include ITEM_AGREEMENTS, WINNER_FRAMING, SCORING_TABLE, OBJECTIONS, FRAMEWORKS, CONVERGENCE_PLAN, STATE_SNAPSHOT.",
+                "",
+                "3. TRANSMISSION_CHECKLIST",
+                "[ ] R0 Gate passed",
+                "[ ] Foundation >=70%",
+                "[ ] Dossier updated",
+                "[ ] Unknowns carried",
+                "[ ] Blind spots acknowledged",
+                "[ ] Structural vulnerabilities carried",
             ]
         )
         envelope = build_payload_envelope("\n".join(body_lines))

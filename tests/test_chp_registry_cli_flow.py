@@ -10,6 +10,7 @@ from cme.chp import (  # noqa: E402
     CHPOrchestrator,
     DecisionRegistry,
     Phase,
+    SessionStatus,
     ThirdPartyValidation,
     ValidationResult,
 )
@@ -50,6 +51,8 @@ def test_registry_persists_received_packet_and_validation(tmp_path):
     )
     assert updated.current_round == 1
     assert updated.rounds[-1].payload_id == "ABC123"
+    assert updated.rounds[-1].state_snapshot["PAYLOAD_ECHO"] == "[RX] [ABC123] CONFIRMED"
+    assert updated.state_snapshots[-1].status.value == "PROVISIONAL_LOCK"
 
     orch2.apply_validation(
         updated.decision_id,
@@ -140,3 +143,58 @@ def test_duplicate_context_halts_and_related_autopopulates(tmp_path):
     )
     report3 = orch.run_initial_session(case=case3, foundation_disclosure=disclosure3, foundation_attack=attack3)
     assert "Fund enterprise workflow" in (report3.case.dossier.prior_decisions if report3.case.dossier else [])
+
+
+def test_initial_session_records_devil_vcl_and_state_snapshot():
+    registry = DecisionRegistry()
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_capital_allocation_case(
+        CapitalAllocationInput(
+            title="Fund enterprise workflow",
+            company="Acme",
+            proposal_summary="Should we fund a new enterprise workflow team this quarter?",
+            investment_amount_usd=2_500_000,
+            expected_payback_months=14,
+            minimum_runway_months=12,
+            current_runway_months=18,
+            strategic_priorities=["Expand enterprise ARR"],
+            key_risks=["Adoption lag"],
+            expected_upside=["Higher ACV"],
+        )
+    )
+    report = orch.run_initial_session(case=case, foundation_disclosure=disclosure, foundation_attack=attack)
+    assert report.case.devil_advocate_rounds
+    assert report.case.vcl_diagnoses
+    assert report.case.state_snapshots
+    assert "VCL_DIAGNOSIS" in report.initial_packet
+    assert "SHAPE_LOCK" in report.initial_packet
+
+
+def test_round_five_provisional_becomes_unresolved():
+    registry = DecisionRegistry()
+    orch = CHPOrchestrator(registry=registry)
+    case, disclosure, attack = build_capital_allocation_case(
+        CapitalAllocationInput(
+            title="Fund enterprise workflow",
+            company="Acme",
+            proposal_summary="Should we fund a new enterprise workflow team this quarter?",
+            investment_amount_usd=2_500_000,
+            expected_payback_months=14,
+            minimum_runway_months=12,
+            current_runway_months=18,
+            strategic_priorities=["Expand enterprise ARR"],
+            key_risks=["Adoption lag"],
+            expected_upside=["Higher ACV"],
+        )
+    )
+    report = orch.run_initial_session(case=case, foundation_disclosure=disclosure, foundation_attack=attack)
+    report.case.status = SessionStatus.PROVISIONAL_LOCK
+    updated = orch.receive_partner_packet(
+        decision_id=report.case.decision_id,
+        partner_packet="BEGIN_PAYLOAD [RX] [RND005]\npartner body\nEND_PAYLOAD [RX] [RND005]",
+        phase=Phase.IMPLEMENTATION,
+        round_number=5,
+        payload_echo="[RX] [RND005] CONFIRMED",
+        snapshot_status="PROVISIONAL",
+    )
+    assert updated.status.value == "UNRESOLVED"
