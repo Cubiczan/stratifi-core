@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/demo.mp4
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-7%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen)](tests/)
 
 ---
 
@@ -22,10 +22,11 @@ As organizations deploy multiple specialized AI agents (a finance agent, a strat
 2. **Reasoning opacity** — humans get a conclusion without seeing how it was reached
 3. **Output drift** — agents produce prose; humans need something runnable
 
-Consensus Hardening Protocol composes four well-specified subsystems to solve all three:
+Consensus Hardening Protocol composes five well-specified subsystems to solve all three:
 
 | Subsystem | Role | Spec it implements |
 |---|---|---|
+| **Consensus Hardening Protocol** | Cross-model decision hardening with gates, packets, lock states, adversarial foundation attack, VCL diagnosis, and third-party validation | `cme.chp` |
 | **Cognitive Mesh Protocol** | Structured expansion ↔ compression reasoning with grounding checks | `cognitive-mesh-protocol.skill` |
 | **Context Engineering Framework** | Layered short/long-term memory + entity/event/task schema | `context-engineering-framework.skill` |
 | **Agentic Context Engineering** | Evolving playbooks with Generator/Reflector/Curator, delta-only updates | `agentic-context-engineering.skill` |
@@ -54,23 +55,31 @@ Both produce a full Markdown orchestration report: problem classification, per-a
 
 ---
 
-## Announcing CHP
+## Consensus Hardening Protocol
 
-This repo now includes an early **Consensus Hardening Protocol (CHP)** workflow for capital allocation decisions.
+CHP is the decision-governance layer for origin-agnostic, cross-model finance workflows. It is designed for high-stakes CFO decisions where a single model answer is not good enough: the system records the foundation, attacks it, packages it for a partner model, requires echoed payload integrity, and prevents final lock until third-party validation.
 
-CHP is the start of a new layer on top of the existing mesh:
+The current implementation covers:
 
-- turn a finance decision into a structured session instead of a one-shot answer
-- make assumptions, vulnerabilities, and lock states explicit
-- require a partner response and third-party validation before a decision is considered hardened
+- pre-session context checks with duplicate halt and related-lock auto-population
+- model parity checks that halt on significant asymmetry
+- R0 gate and foundation score gate before packet generation
+- adversarial foundation disclosure and foundation attack
+- Phase 0 devil's advocate capture and Round 3 implementation devil's advocate support
+- VCL diagnosis in the origin packet
+- `BEGIN_PAYLOAD` / `END_PAYLOAD` packet envelopes with required `PAYLOAD_ECHO`
+- structured `STATE_SNAPSHOT` persistence
+- Phase 1 gate enforcement before implementation rounds
+- Round 5 `PROVISIONAL -> UNRESOLVED` forcing
+- `PROVISIONAL_LOCK -> LOCKED` progression only after third-party validation
 
-In the current scaffold, CHP covers:
+The core state model lives in [`src/cme/chp`](src/cme/chp). The CFO operating layer that uses it with finance, strategy, and compliance agents lives in [`src/cme/cfo_os`](src/cme/cfo_os).
 
-- session start with a normalized capital allocation dossier
-- context check and model parity assessment
-- R0 and foundation-stage evaluation
-- partner packet ingestion
-- third-party validation with `PROVISIONAL_LOCK -> LOCKED` progression
+Current remaining protocol work:
+
+- exact partner 7-section parser/enforcer
+- council spawn execution for high-stakes low-confidence sessions
+- final convergence closure with URLs, blind-spot final audit, and structural-vulnerability final audit
 
 Quick run:
 
@@ -107,6 +116,26 @@ PYTHONPATH=src python3 -m cme.cli chp-start
 PYTHONPATH=src python3 -m cme.cli chp-receive
 PYTHONPATH=src python3 -m cme.cli chp-validate
 ```
+
+---
+
+## CFO Workflow Suite
+
+CHP now ships with a CFO workflow suite. Each workflow creates a finance artifact and attaches a CHP session so the output is auditable before it becomes a decision record.
+
+| Workflow | CLI command | Output artifacts |
+|---|---|---|
+| Monthly CFO Variance Studio | `variance-studio` | Markdown, JSON, HTML |
+| 13-Week Cash Forecast Engine | `cash-forecast-13w` | Markdown, JSON, Excel workbook |
+| 24-Month SaaS Operating Model | `saas-model-24m` | Markdown, JSON, Excel workbook |
+| Board Reporting Generator | `board-reporting-generator` | Markdown, JSON, PowerPoint deck |
+| AP Cash & Payables Optimizer | `ap-optimizer` | Markdown, JSON, Excel workbook |
+| CFO Decision Impact Simulator | `decision-impact-simulator` | Markdown, JSON, HTML |
+| SaaS KPI Dashboard | `saas-kpi-dashboard` | Markdown, JSON, HTML, Excel workbook |
+| Investment Committee Scoring Tool | `investment-committee` | Markdown, JSON, Excel workbook |
+| Multi-Agent CFO Operating System | `cfo-os` | CFO session report with mesh trace, audit trail, and CHP state |
+
+The finance roadmap is documented in [docs/CHP_FINANCE_PROJECT_ROADMAP.md](docs/CHP_FINANCE_PROJECT_ROADMAP.md).
 
 ---
 
@@ -213,6 +242,9 @@ After every agent has contributed, the synthesizer produces:
 consensus-hardening-protocol/
 ├── src/
 │   ├── cme/                       # Core framework
+│   │   ├── chp/                   # Consensus Hardening Protocol
+│   │   ├── cfo_os/                # Multi-Agent CFO Operating System
+│   │   ├── finance/               # CFO workflow engines and artifacts
 │   │   ├── protocol.py            # Cognitive Mesh Protocol
 │   │   ├── context.py             # Context Engine (memory + schema)
 │   │   ├── playbook.py            # ACE playbook + Reflector + Curator
@@ -225,9 +257,11 @@ consensus-hardening-protocol/
 │       ├── strategy_agent.py
 │       └── compliance_agent.py
 ├── examples/
-│   └── basic_demo.py              # Minimal end-to-end example
+│   ├── basic_demo.py              # Minimal end-to-end example
+│   └── *.csv / *.json             # Finance workflow sample inputs
 ├── tests/
-│   └── test_mesh.py               # Full pipeline smoke tests (7, all passing)
+│   ├── test_mesh.py               # Core orchestration smoke tests
+│   └── test_*                     # CHP, CFO OS, finance workflow tests
 ├── DEMO_SCRIPT.md                 # Written demo script with talking points
 ├── pyproject.toml
 └── README.md
@@ -291,9 +325,20 @@ cme playbook {finance,strategy,compliance}   # Show an agent's seeded playbook
 
 cme context                    # Dump the seeded organizational context
 
-cme chp-start                  # Start a CHP capital allocation session scaffold
+cme chp-start                  # Start a CHP capital allocation session
 cme chp-receive                # Attach a partner packet to an existing CHP decision
 cme chp-validate               # Apply third-party validation to a CHP decision
+
+cme variance-studio            # Monthly actual-vs-budget variance analysis
+cme cash-forecast-13w          # 13-week cash forecast
+cme cash-forecast-13w-template # Excel input template for the cash forecast
+cme saas-model-24m             # 24-month SaaS operating model
+cme board-reporting-generator  # Board-ready reporting package and PPTX
+cme ap-optimizer               # AP cash and payables optimizer
+cme decision-impact-simulator  # CFO scenario simulator
+cme saas-kpi-dashboard         # SaaS KPI actual-vs-budget dashboard
+cme investment-committee       # Investment committee scoring tool
+cme cfo-os                     # Multi-agent CFO operating session
 ```
 
 ---
@@ -305,7 +350,7 @@ pip install pytest
 PYTHONPATH=src pytest tests/ -v
 ```
 
-All 7 tests pass, covering protocol rendering, hallucination-risk heuristics, playbook dedup/refinement, context selection, statement completeness, and an end-to-end orchestration that verifies topological ordering between finance → strategy → compliance.
+The focused suite currently has 34 passing tests covering protocol rendering, payload integrity, gate enforcement, lock progression, context reuse, CFO OS behavior, workbook/deck exporters, and the finance workflow engines.
 
 ---
 
