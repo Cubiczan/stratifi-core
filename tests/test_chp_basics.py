@@ -78,3 +78,30 @@ def test_registry_and_validation_promote_lock():
     assert status == SessionStatus.LOCKED
     assert registry.get("dec-1") is case
     assert "Investment spec v1" in case.locked_decisions
+
+
+def test_validation_requires_provisional_lock():
+    case = DecisionCase(
+        decision_id="dec-2",
+        title="Forecast review",
+        domain="forecast",
+        created_at="2026-04-25T10:00:00Z",
+        owner="cfo",
+        status=SessionStatus.PROVISIONAL,
+        dossier=Dossier(core_problem="Should we approve the plan?", goal_state=["grow"], current_state=["cash"], constraints=["runway"], scope=["decision"]),
+    )
+    try:
+        apply_third_party_validation(
+            case,
+            ThirdPartyValidation(
+                validator="fresh_instance",
+                item="Forecast spec v1",
+                challenge="stress test",
+                result=ValidationResult.CONFIRM,
+                rationale="good enough",
+            ),
+        )
+    except ValueError as exc:
+        assert "PROVISIONAL_LOCK" in str(exc)
+    else:
+        raise AssertionError("expected validation to require PROVISIONAL_LOCK")

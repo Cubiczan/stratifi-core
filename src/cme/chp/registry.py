@@ -21,12 +21,19 @@ class DecisionRegistry:
 
     def find_related(self, text: str) -> List[DecisionCase]:
         query = text.lower()
+        query_tokens = _meaningful_tokens(query)
         hits: List[DecisionCase] = []
         for case in self._cases.values():
             if query in case.title.lower() or query in case.domain.lower():
                 hits.append(case)
                 continue
             if case.dossier and case.dossier.core_problem and query in case.dossier.core_problem.lower():
+                hits.append(case)
+                continue
+            haystacks = [case.title.lower(), case.domain.lower()]
+            if case.dossier and case.dossier.core_problem:
+                haystacks.append(case.dossier.core_problem.lower())
+            if query_tokens and any(len(query_tokens & _meaningful_tokens(haystack)) >= 3 for haystack in haystacks):
                 hits.append(case)
         return hits
 
@@ -51,3 +58,27 @@ class DecisionRegistry:
         for decision_id, case_data in raw.items():
             registry._cases[decision_id] = DecisionCase.from_dict(case_data)
         return registry
+
+
+def _meaningful_tokens(text: str) -> set[str]:
+    stop = {
+        "the",
+        "and",
+        "for",
+        "with",
+        "this",
+        "that",
+        "from",
+        "into",
+        "should",
+        "would",
+        "could",
+        "team",
+        "quarter",
+        "new",
+    }
+    tokens = {
+        chunk.strip("-_ ")
+        for chunk in "".join(ch if ch.isalnum() else " " for ch in text.lower()).split()
+    }
+    return {token for token in tokens if len(token) >= 4 and token not in stop}

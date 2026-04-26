@@ -25,12 +25,14 @@ from typing import List, Optional
 
 from cme.agent import MeshAgent, TurnResult
 from cme.bridge import EntryPoint
+from cme.bridge import Consequences, WhyLink
 from cme.chp.foundation import foundation_verdict, validate_foundation_pair
 from cme.chp.gates import evaluate_r0_gate
 from cme.chp.models import (
     DecisionCase,
     FoundationAttack,
     FoundationDisclosure,
+    Phase,
     SessionStatus,
     ThirdPartyValidation,
     ValidationResult,
@@ -129,11 +131,13 @@ class CFOOperatingSystem:
             foundation_attack=attack,
         )
 
-        orchestration = self._mesh.orchestrate(
-            brief.problem,
-            entry_point=EntryPoint.PROBLEM,
-            workflow_title=f"{brief.task_type.value}: {brief.title[:60]}",
-        )
+        orchestration = self._empty_orchestration(brief)
+        if chp_report.case.status not in {SessionStatus.HALT, SessionStatus.REFRAME_REQUIRED}:
+            orchestration = self._mesh.orchestrate(
+                brief.problem,
+                entry_point=EntryPoint.PROBLEM,
+                workflow_title=f"{brief.task_type.value}: {brief.title[:60]}",
+            )
 
         self._advance_lock_state(chp_report.case, chp_report.foundation_verdict, orchestration.turns)
 
@@ -157,6 +161,25 @@ class CFOOperatingSystem:
             artifact=artifact,
             audit=audit,
             turns=orchestration.turns,
+        )
+
+    def receive_partner_packet(
+        self,
+        *,
+        decision_id: str,
+        partner_packet: str,
+        phase: Phase,
+        round_number: int,
+        payload_echo: str,
+        snapshot_status: str = "PROVISIONAL_LOCK",
+    ) -> DecisionCase:
+        return self._chp.receive_partner_packet(
+            decision_id=decision_id,
+            partner_packet=partner_packet,
+            phase=phase,
+            round_number=round_number,
+            payload_echo=payload_echo,
+            snapshot_status=snapshot_status,
         )
 
     def lock(
@@ -240,7 +263,7 @@ class CFOOperatingSystem:
         if case.status in {SessionStatus.HALT, SessionStatus.REFRAME_REQUIRED}:
             return
         if f_verdict == Verdict.PASS and not any_failure:
-            case.status = SessionStatus.PROVISIONAL_LOCK
+            case.status = SessionStatus.PROVISIONAL
 
     def _build_artifact(
         self, brief: CFOBrief, case: DecisionCase, turns: List[TurnResult]
@@ -252,6 +275,36 @@ class CFOOperatingSystem:
         if isinstance(brief, BoardBrief):
             return build_board_output(brief=brief, case=case, turns=turns)
         raise TypeError(f"Unsupported brief type: {type(brief).__name__}")
+
+    def _empty_orchestration(self, brief: CFOBrief) -> OrchestrationReport:
+        statement = self._mesh.bridge.build_statement(
+            entry_point=EntryPoint.PROBLEM,
+            observable_tension=f"Protocol gate halted before mesh orchestration for: {brief.problem}",
+            whys=[
+                WhyLink(question="Why did orchestration not run?", answer="A CHP gate blocked progression."),
+                WhyLink(question="Why does that matter?", answer="Cross-model hardening must happen before synthesis."),
+                WhyLink(question="What is the root constraint?", answer="The decision packet is not yet valid for convergence."),
+            ],
+            consequences=Consequences(
+                strategic="Decision quality would be biased if synthesis ran ahead of protocol gates.",
+                cultural="Teams could mistake incomplete hardening for real consensus.",
+                financial="Capital or board decisions could advance on unvalidated assumptions.",
+                timeline="immediate",
+            ),
+            strategic_connection="The operating system protects decision quality by refusing to synthesize before the protocol is valid.",
+        )
+        workflow = self._mesh.bridge.build_workflow(
+            title=f"Blocked workflow: {brief.title[:60]}",
+            statement=statement,
+            agent_outputs=[],
+        )
+        return OrchestrationReport(
+            problem=brief.problem,
+            turns=[],
+            workflow=workflow,
+            duration_ms=0,
+            context_snapshot=self.context.dump(),
+        )
 
     # Re-expose CHP primitives for callers that want raw access ----------
 

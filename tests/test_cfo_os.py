@@ -14,7 +14,7 @@ from cme.cfo_os import (
     InvestmentBrief,
 )
 from cme.cfo_os.artifacts import BoardOutput, ForecastPack, InvestmentCaseMemo
-from cme.chp.models import SessionStatus
+from cme.chp.models import Phase, SessionStatus
 from demo import ComplianceAgent, FinanceAgent, StrategyAgent
 
 
@@ -44,7 +44,7 @@ def test_investment_case_runs_three_agents_and_advances_lock():
     assert isinstance(report.artifact, InvestmentCaseMemo)
     assert {t.agent for t in report.turns} == {"finance", "strategy", "compliance"}
     assert report.case.foundation_score and report.case.foundation_score >= 70
-    assert report.case.status == SessionStatus.PROVISIONAL_LOCK
+    assert report.case.status == SessionStatus.PROVISIONAL
     assert "BEGIN_PAYLOAD" in report.initial_packet
     assert report.audit.entries  # at least one provenance entry
 
@@ -99,7 +99,16 @@ def test_lock_progression_via_third_party_validation():
         current_runway_months=18,
     )
     report = cfo.run(brief)
-    assert report.case.status == SessionStatus.PROVISIONAL_LOCK
+    assert report.case.status == SessionStatus.PROVISIONAL
+
+    cfo.receive_partner_packet(
+        decision_id=report.case.decision_id,
+        partner_packet="BEGIN_PAYLOAD [RX] [ABC123]\npartner body\nEND_PAYLOAD [RX] [ABC123]",
+        phase=Phase.SPEC,
+        round_number=1,
+        payload_echo="[RX] [ABC123] CONFIRMED",
+        snapshot_status="PROVISIONAL_LOCK",
+    )
 
     case = cfo.lock(
         report.case.decision_id,

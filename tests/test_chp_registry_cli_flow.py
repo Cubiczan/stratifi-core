@@ -68,3 +68,75 @@ def test_registry_persists_received_packet_and_validation(tmp_path):
     assert final is not None
     assert final.status.value == "LOCKED"
     assert "Investment spec v1" in final.locked_decisions
+
+
+def test_duplicate_context_halts_and_related_autopopulates(tmp_path):
+    registry = DecisionRegistry()
+    orch = CHPOrchestrator(registry=registry)
+    case1, disclosure1, attack1 = build_capital_allocation_case(
+        CapitalAllocationInput(
+            title="Fund enterprise workflow",
+            company="Acme",
+            proposal_summary="Should we fund a new enterprise workflow team this quarter?",
+            investment_amount_usd=2_500_000,
+            expected_payback_months=14,
+            minimum_runway_months=12,
+            current_runway_months=18,
+            strategic_priorities=["Expand enterprise ARR"],
+            key_risks=["Adoption lag"],
+            expected_upside=["Higher ACV"],
+        )
+    )
+    report1 = orch.run_initial_session(case=case1, foundation_disclosure=disclosure1, foundation_attack=attack1)
+    orch.receive_partner_packet(
+        decision_id=report1.case.decision_id,
+        partner_packet="BEGIN_PAYLOAD [RX] [ABC123]\npartner body\nEND_PAYLOAD [RX] [ABC123]",
+        phase=Phase.SPEC,
+        round_number=1,
+        payload_echo="[RX] [ABC123] CONFIRMED",
+        snapshot_status="PROVISIONAL_LOCK",
+    )
+    orch.apply_validation(
+        report1.case.decision_id,
+        ThirdPartyValidation(
+            validator="fresh_instance",
+            item="Investment spec v1",
+            challenge="downside stress",
+            result=ValidationResult.CONFIRM,
+            rationale="still coherent",
+        ),
+    )
+
+    case2, disclosure2, attack2 = build_capital_allocation_case(
+        CapitalAllocationInput(
+            title="Fund enterprise workflow",
+            company="Acme",
+            proposal_summary="Should we fund a new enterprise workflow team this quarter?",
+            investment_amount_usd=2_500_000,
+            expected_payback_months=14,
+            minimum_runway_months=12,
+            current_runway_months=18,
+            strategic_priorities=[],
+            key_risks=[],
+            expected_upside=[],
+        )
+    )
+    report2 = orch.run_initial_session(case=case2, foundation_disclosure=disclosure2, foundation_attack=attack2)
+    assert report2.case.status.value == "HALT"
+
+    case3, disclosure3, attack3 = build_capital_allocation_case(
+        CapitalAllocationInput(
+            title="Fund analytics workflow",
+            company="Acme",
+            proposal_summary="Should we fund a new enterprise workflow team this quarter?",
+            investment_amount_usd=2_000_000,
+            expected_payback_months=12,
+            minimum_runway_months=12,
+            current_runway_months=18,
+            strategic_priorities=[],
+            key_risks=[],
+            expected_upside=[],
+        )
+    )
+    report3 = orch.run_initial_session(case=case3, foundation_disclosure=disclosure3, foundation_attack=attack3)
+    assert "Fund enterprise workflow" in (report3.case.dossier.prior_decisions if report3.case.dossier else [])

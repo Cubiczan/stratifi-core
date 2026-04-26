@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from cme.chp import CHPOrchestrator  # noqa: E402
+from cme.chp.models import SessionStatus  # noqa: E402
 from cme.finance.saas_operating_model import (  # noqa: E402
     OperatingModelAssumptions,
     build_24_month_saas_operating_model,
@@ -56,7 +57,11 @@ def test_saas_operating_model_case_builder():
 
     assert report.case.domain == "saas_operating_model"
     assert report.case.foundation_score == attack.foundation_score
-    assert "BEGIN_PAYLOAD" in report.initial_packet
+    if attack.foundation_score >= 70:
+        assert "BEGIN_PAYLOAD" in report.initial_packet
+    else:
+        assert report.initial_packet == ""
+        assert report.case.status == SessionStatus.REFRAME_REQUIRED
 
 
 def test_saas_operating_model_workbook_export(tmp_path: Path):

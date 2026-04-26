@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from cme.chp.foundation import foundation_verdict, validate_foundation_pair
-from cme.chp.gates import evaluate_r0_gate
+from cme.chp.gates import evaluate_phase_gate, evaluate_r0_gate
 from cme.chp.models import (
     ContextCheck,
     DecisionCase,
@@ -17,7 +17,12 @@ from cme.chp.models import (
     Verdict,
 )
 from cme.chp.parity import assess_model_parity
-from cme.chp.payloads import build_payload_envelope, extract_payload_id, validate_payload_envelope
+from cme.chp.payloads import (
+    build_payload_envelope,
+    extract_payload_id,
+    payload_echo_confirmed,
+    validate_payload_envelope,
+)
 from cme.chp.registry import DecisionRegistry
 from cme.chp.validators import apply_third_party_validation
 from cme.context import ContextEngine
@@ -91,6 +96,10 @@ class CHPOrchestrator:
         foundation_attack: FoundationAttack,
     ) -> CHPReport:
         case.context_check = self._context_check(case)
+        if case.context_check.action == "AUTO_POPULATE" and case.dossier:
+            case.dossier.prior_decisions = list(
+                dict.fromkeys(case.dossier.prior_decisions + case.context_check.related_locks)
+            )
         case.model_parity = assess_model_parity(case.origin_model, case.partner_model)
 
         r0 = evaluate_r0_gate(
@@ -110,15 +119,22 @@ class CHPOrchestrator:
             case.dossier.foundation_score = foundation_attack.foundation_score
             case.structural_vulnerabilities = list(case.dossier.structural_vulnerabilities)
 
-        if r0.verdict == Verdict.HALT:
+        if case.context_check.action == "HALT_DUPLICATE":
+            case.status = SessionStatus.HALT
+        elif case.model_parity.delta == "SIGNIFICANT":
+            case.status = SessionStatus.HALT
+        elif r0.verdict == Verdict.HALT:
             case.status = SessionStatus.HALT
         elif f_verdict == Verdict.REFRAME:
             case.status = SessionStatus.REFRAME_REQUIRED
         else:
             case.status = SessionStatus.EXPLORING
 
-        packet = self._build_initial_packet(case, foundation_disclosure, foundation_attack, r0.verdict, f_verdict)
-        self.registry.add(case)
+        packet = ""
+        if case.status not in {SessionStatus.HALT, SessionStatus.REFRAME_REQUIRED}:
+            packet = self._build_initial_packet(case, foundation_disclosure, foundation_attack, r0.verdict, f_verdict)
+        if case.context_check.action != "HALT_DUPLICATE":
+            self.registry.add(case)
         return CHPReport(
             case=case,
             foundation_disclosure=foundation_disclosure,
@@ -146,16 +162,22 @@ class CHPOrchestrator:
         payload_id = extract_payload_id(partner_packet)
         if not payload_id:
             raise ValueError("partner packet is missing a payload id")
+        if not payload_echo or not payload_echo_confirmed("RX", payload_id, payload_echo):
+            raise ValueError("partner packet is missing a matching PAYLOAD_ECHO confirmation")
+        phase_gate = evaluate_phase_gate(round_number, case.status)
+        if phase_gate == Verdict.PHASE_GATE_FAIL:
+            case.status = SessionStatus.HALT
+            raise ValueError("cannot enter implementation before Phase 1 reaches PROVISIONAL_LOCK or LOCKED")
         record = RoundRecord(
             decision_id=decision_id,
             phase=phase,
             round_number=round_number,
             payload_id=payload_id,
             partner_packet=partner_packet,
-            payload_echo_confirmed=bool(payload_echo),
+            payload_echo_confirmed=True,
             state_snapshot={
                 "status": snapshot_status,
-                "payload_echo": payload_echo or "MISSING",
+                "payload_echo": payload_echo,
             },
         )
         case.add_round(record)
@@ -189,7 +211,7 @@ class CHPOrchestrator:
             prior_sessions_count=len(related),
             prior_lock_versions=prior_versions,
             legacy_warning=False,
-            related_locks=[item.decision_id for item in related if item.locked_decisions],
+            related_locks=[item.title for item in related if item.status == SessionStatus.LOCKED],
             assessment=assessment,
             action=action,
         )

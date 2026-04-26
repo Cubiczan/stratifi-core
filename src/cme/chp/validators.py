@@ -5,6 +5,8 @@ from cme.chp.models import DecisionCase, SessionStatus, ThirdPartyValidation, Va
 
 
 def apply_third_party_validation(case: DecisionCase, validation: ThirdPartyValidation) -> SessionStatus:
+    if case.status != SessionStatus.PROVISIONAL_LOCK:
+        raise ValueError("third-party validation requires PROVISIONAL_LOCK status")
     case.third_party_log.append(validation)
     if validation.result == ValidationResult.CONFIRM:
         case.status = SessionStatus.LOCKED
