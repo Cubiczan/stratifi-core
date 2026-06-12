@@ -473,15 +473,18 @@ def render_variance_html(result: VarianceStudioResult, *, session_summary: str =
         for item in result.risks
     )
     opportunities = "".join(
-        f"<li>{_escape_html(item.text)}"
-        f"{f' <span class=\"pill\">{_escape_html(item.size_hint)}</span>' if item.size_hint else ''}</li>"
+        "<li>{}{}</li>".format(
+            _escape_html(item.text),
+            ' <span class="pill">{}</span>'.format(_escape_html(item.size_hint)) if item.size_hint else "",
+        )
         for item in result.opportunities
     )
     actions = "".join(
-        f"<li>{_escape_html(item.text)}"
-        f"{f' <span class=\"meta\">owner={_escape_html(item.owner_hint)}</span>' if item.owner_hint else ''}"
-        f"{f' <span class=\"meta\">impact={_escape_html(item.expected_impact_hint)}</span>' if item.expected_impact_hint else ''}"
-        f"</li>"
+        "<li>{}{}{}</li>".format(
+            _escape_html(item.text),
+            ' <span class="meta">owner={}</span>'.format(_escape_html(item.owner_hint)) if item.owner_hint else "",
+            ' <span class="meta">impact={}</span>'.format(_escape_html(item.expected_impact_hint)) if item.expected_impact_hint else "",
+        )
         for item in result.suggested_actions
     )
     audit_items = "".join(
