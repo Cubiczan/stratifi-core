@@ -13,7 +13,24 @@ logger = logging.getLogger("stratifi_core.db")
 
 COCKROACH_URL = "cockroachdb+psycopg2://REDACTED@vortex-giraffe-15678.jxf.gcp-us-east1.cockroachlabs.cloud:26257/stratifi_core?sslmode=require"
 DATABASE_URL = os.getenv("STRATIFI_DATABASE_URL", COCKROACH_URL)
-engine = create_engine(DATABASE_URL, pool_size=8, max_overflow=4, pool_timeout=30, pool_pre_ping=True)
+
+# Per-statement / per-connection timeouts so a hung or unreachable DB fails fast
+# instead of blocking callers indefinitely.
+#   - connect_timeout: cap the TCP/SSL handshake (seconds).
+#   - statement_timeout: cap any single SQL statement server-side (milliseconds).
+CONNECT_TIMEOUT_S = int(os.getenv("STRATIFI_DB_CONNECT_TIMEOUT", "5"))
+STATEMENT_TIMEOUT_MS = int(os.getenv("STRATIFI_DB_STATEMENT_TIMEOUT_MS", "5000"))
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=8,
+    max_overflow=4,
+    pool_timeout=30,
+    pool_pre_ping=True,
+    connect_args={
+        "connect_timeout": CONNECT_TIMEOUT_S,
+        "options": "-c statement_timeout={}".format(STATEMENT_TIMEOUT_MS),
+    },
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 def get_session() -> Session: return SessionLocal()

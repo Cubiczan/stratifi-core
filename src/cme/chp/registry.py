@@ -9,7 +9,17 @@ from typing import Dict, List, Optional
 
 from cme.chp.models import DecisionCase, SessionStatus
 
+from cubiczan_resilience import resilient
+
 logger = logging.getLogger(__name__)
+
+
+class RegistryDBError(RuntimeError):
+    """Raised when a CockroachDB operation fails after retries.
+
+    Surfaced to callers so a downed/unreachable database is treated as an
+    error rather than silently masquerading as "no results".
+    """
 
 
 @dataclass
@@ -104,85 +114,75 @@ class DecisionRegistry:
 
     # --- CockroachDB helpers ---
 
+    @resilient(timeout=10.0, max_attempts=3)
     def _db_upsert(self, case: DecisionCase) -> None:
-        """Insert or update a decision case in CockroachDB."""
+        """Insert or update a decision case in CockroachDB.
+
+        Raises RegistryDBError if the write cannot be persisted (after retries),
+        so callers are not misled into thinking the write succeeded.
+        """
         try:
             from cme.db.cockroachdb_layer import get_session, DecisionCaseModel, RoundRecordModel
             from sqlalchemy.dialects.postgresql import insert as pg_insert
+        except ImportError as e:
+            logger.info("CockroachDB layer unavailable, skipping upsert: %s", e)
+            return
 
-            session = get_session()
-            try:
-                # Upsert decision case
-                case_dict = case.to_dict()
-                stmt = pg_insert(DecisionCaseModel).values(
-                    decision_id=case.decision_id,
-                    title=case.title,
-                    domain=case.domain,
-                    analysis_id=case_dict.get("analysis_id", ""),
-                    status=case.status.value if hasattr(case.status, "value") else str(case.status),
-                    foundation_score=getattr(case, "foundation_score", None),
-                    current_phase=case_dict.get("current_phase", "FOUNDATION"),
-                    current_round=case_dict.get("current_round", 0),
-                    dossier=case_dict.get("dossier", {}),
-                    locked_decisions=case_dict.get("locked_decisions", []),
-                ).on_conflict_do_update(
-                    index_elements=["decision_id"],
-                    set_={
-                        "title": case.title,
-                        "status": case.status.value if hasattr(case.status, "value") else str(case.status),
-                        "foundation_score": getattr(case, "foundation_score", None),
-                        "dossier": case_dict.get("dossier", {}),
-                        "locked_decisions": case_dict.get("locked_decisions", []),
-                    }
-                )
-                session.execute(stmt)
-                session.commit()
-            finally:
-                session.close()
+        session = get_session()
+        try:
+            # Upsert decision case
+            case_dict = case.to_dict()
+            stmt = pg_insert(DecisionCaseModel).values(
+                decision_id=case.decision_id,
+                title=case.title,
+                domain=case.domain,
+                analysis_id=case_dict.get("analysis_id", ""),
+                status=case.status.value if hasattr(case.status, "value") else str(case.status),
+                foundation_score=getattr(case, "foundation_score", None),
+                current_phase=case_dict.get("current_phase", "FOUNDATION"),
+                current_round=case_dict.get("current_round", 0),
+                dossier=case_dict.get("dossier", {}),
+                locked_decisions=case_dict.get("locked_decisions", []),
+            ).on_conflict_do_update(
+                index_elements=["decision_id"],
+                set_={
+                    "title": case.title,
+                    "status": case.status.value if hasattr(case.status, "value") else str(case.status),
+                    "foundation_score": getattr(case, "foundation_score", None),
+                    "dossier": case_dict.get("dossier", {}),
+                    "locked_decisions": case_dict.get("locked_decisions", []),
+                }
+            )
+            session.execute(stmt)
+            session.commit()
         except Exception as e:
-            logger.warning("DB upsert failed for %s: %s", case.decision_id, e)
+            session.rollback()
+            logger.error("DB upsert failed for %s: %s", case.decision_id, e)
+            raise RegistryDBError(
+                "CockroachDB upsert failed for {}".format(case.decision_id)
+            ) from e
+        finally:
+            session.close()
 
+    @resilient(timeout=10.0, max_attempts=3)
     def _db_load_all(self) -> List[DecisionCase]:
-        """Load all decision cases from CockroachDB."""
+        """Load all decision cases from CockroachDB.
+
+        Raises RegistryDBError on failure (after retries) rather than returning
+        an empty list, so a downed DB is not mistaken for "no cases".
+        """
         try:
             from cme.db.cockroachdb_layer import get_session, DecisionCaseModel
             from sqlalchemy import select
-
-            session = get_session()
-            try:
-                rows = session.execute(select(DecisionCaseModel).order_by(DecisionCaseModel.created_at.desc())).scalars().all()
-                cases = []
-                for row in rows:
-                    case_dict = {
-                        "decision_id": row.decision_id,
-                        "title": row.title,
-                        "domain": row.domain,
-                        "status": row.status,
-                        "foundation_score": row.foundation_score,
-                        "current_phase": row.current_phase,
-                        "current_round": row.current_round,
-                        "dossier": row.dossier or {},
-                        "locked_decisions": row.locked_decisions or [],
-                    }
-                    cases.append(DecisionCase.from_dict(case_dict))
-                return cases
-            finally:
-                session.close()
-        except Exception as e:
-            logger.warning("DB load failed: %s", e)
+        except ImportError as e:
+            logger.info("CockroachDB layer unavailable, returning no DB cases: %s", e)
             return []
 
-    def _db_load_one(self, decision_id: str) -> Optional[DecisionCase]:
-        """Load a single decision case from CockroachDB."""
+        session = get_session()
         try:
-            from cme.db.cockroachdb_layer import get_session, DecisionCaseModel
-            from sqlalchemy import select
-
-            session = get_session()
-            try:
-                row = session.execute(select(DecisionCaseModel).where(DecisionCaseModel.decision_id == decision_id)).scalars().first()
-                if not row:
-                    return None
+            rows = session.execute(select(DecisionCaseModel).order_by(DecisionCaseModel.created_at.desc())).scalars().all()
+            cases = []
+            for row in rows:
                 case_dict = {
                     "decision_id": row.decision_id,
                     "title": row.title,
@@ -194,12 +194,53 @@ class DecisionRegistry:
                     "dossier": row.dossier or {},
                     "locked_decisions": row.locked_decisions or [],
                 }
-                return DecisionCase.from_dict(case_dict)
-            finally:
-                session.close()
+                cases.append(DecisionCase.from_dict(case_dict))
+            return cases
         except Exception as e:
-            logger.warning("DB load failed for %s: %s", decision_id, e)
+            logger.error("DB load failed: %s", e)
+            raise RegistryDBError("CockroachDB load-all failed") from e
+        finally:
+            session.close()
+
+    @resilient(timeout=10.0, max_attempts=3)
+    def _db_load_one(self, decision_id: str) -> Optional[DecisionCase]:
+        """Load a single decision case from CockroachDB.
+
+        Returns None only when the row genuinely does not exist. Raises
+        RegistryDBError on a DB failure (after retries) so callers can
+        distinguish "not found" from "database unreachable".
+        """
+        try:
+            from cme.db.cockroachdb_layer import get_session, DecisionCaseModel
+            from sqlalchemy import select
+        except ImportError as e:
+            logger.info("CockroachDB layer unavailable, cannot load %s: %s", decision_id, e)
             return None
+
+        session = get_session()
+        try:
+            row = session.execute(select(DecisionCaseModel).where(DecisionCaseModel.decision_id == decision_id)).scalars().first()
+            if not row:
+                return None
+            case_dict = {
+                "decision_id": row.decision_id,
+                "title": row.title,
+                "domain": row.domain,
+                "status": row.status,
+                "foundation_score": row.foundation_score,
+                "current_phase": row.current_phase,
+                "current_round": row.current_round,
+                "dossier": row.dossier or {},
+                "locked_decisions": row.locked_decisions or [],
+            }
+            return DecisionCase.from_dict(case_dict)
+        except Exception as e:
+            logger.error("DB load failed for %s: %s", decision_id, e)
+            raise RegistryDBError(
+                "CockroachDB load failed for {}".format(decision_id)
+            ) from e
+        finally:
+            session.close()
 
     def _text_search(self, text: str, cases: List[DecisionCase]) -> List[DecisionCase]:
         """Full-text search across cases."""

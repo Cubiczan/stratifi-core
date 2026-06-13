@@ -1,2 +1,3 @@
 sqlalchemy>=2.0
 psycopg2-binary>=2.9
+cubiczan-resilience @ git+https://github.com/icohangar-ops/cubiczan-resilience.git#subdirectory=python
