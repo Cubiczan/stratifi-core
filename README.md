@@ -1,111 +1,106 @@
-# Stratifi
+# Stratifi Core
 
-> Trusted, auditable AI intelligence for CFOs — multi-agent financial analysis with built-in evaluation and governance.
+> Cognitive Mesh Enterprise Orchestrator — multi-agent coordination for CFO-grade
+> financial analysis, with consensus-hardened decision governance and an auditable
+> trail from exploration to a locked recommendation.
+
+Stratifi Core packages the Cognitive Mesh Enterprise Orchestrator (`cme`): a set of
+finance engines (cash forecasting, variance analysis, SaaS operating models, board
+reporting, AP optimization, investment-committee scoring) coordinated by multiple
+agents and governed by the Consensus Hardening Protocol (CHP).
 
 ## Quick Start
 
-Run these commands in your terminal:
-
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/stratifi.git
-cd stratifi
+git clone https://github.com/icohangar-ops/stratifi-core.git
+cd stratifi-core
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the zero-config demo
-python scripts/run_demo.py
+# Run the minimal end-to-end example
+python examples/basic_demo.py
 ```
 
-Output includes structured AI response + evaluation scores saved to `demo_output/`.
+Installing the package (editable) also exposes the `cme` command-line entry point:
 
----
-
-## 🏗️ Architecture
-
-```mermaid
-graph TD
-    A[User Query] --> B[MCP Server]
-    B --> C{Connector Router}
-    C --> D[QuickBooks Online]
-    C --> E[Xero]
-    C --> F[Synthetic CFO Engine]
-    C --> G[Custom Adapter]
-    D --> H[Orchestrator - LangGraph]
-    E --> H
-    F --> H
-    G --> H
-    H --> I[Evaluation Engine]
-    I --> J[Governance Layer]
-    J --> K[Structured Output + Scores]
+```bash
+pip install -e ".[dev]"
+cme demo
 ```
 
-## 📦 Core Components
+## Command-Line Interface
+
+The `cme` CLI exposes the orchestrator and each finance engine as a subcommand:
+
+| Command | Purpose |
+|---------|---------|
+| `cme demo` | Run an end-to-end orchestration on a sample problem |
+| `cme playbook` | Show a seeded agent playbook |
+| `cme context` | Dump the seeded organizational context |
+| `cme chp-start` | Start a CHP capital-allocation session scaffold |
+| `cme chp-receive` | Attach a partner packet to an existing CHP decision |
+| `cme chp-validate` | Apply third-party validation to a CHP decision |
+| `cme chp-triangulate` | Run a standalone CHP adversary/fact-check pass on a claim |
+| `cme variance-studio` | Run the monthly CFO Variance Studio on a CSV file |
+| `cme cash-forecast-13w` | Run the 13-week cash forecast engine on CSV inputs |
+| `cme saas-model-24m` | Run the 24-month SaaS operating model |
+| `cme board-reporting-generator` | Generate a board reporting package and PPTX deck |
+| `cme ap-optimizer` | Run the AP Cash & Payables Optimizer |
+| `cme decision-impact-simulator` | Run the CFO Decision Impact Simulator |
+| `cme saas-kpi-dashboard` | Build the SaaS KPI dashboard from actuals and budget CSVs |
+| `cme investment-committee` | Score a finance proposal for investment-committee review |
+
+Run `cme <command> --help` for the arguments of any subcommand. Sample input files
+live under `examples/` (CSV and JSON).
+
+## Core Components
 
 | Module | Purpose |
 |--------|---------|
-| `stratifi/mcp/` | MCP-compliant server with pluggable finance connectors |
-| `stratifi/orchestrator/` | LangGraph state machine for agent coordination |
-| `stratifi/evaluation/` | CFO-specific rubric (accuracy, actionability, risk, clarity) |
-| `stratifi/governance/` | Audit trails, consent management, payload envelopes |
-| `scripts/run_demo.py` | Zero-config end-to-end demo runner |
+| `src/cme/orchestrator.py`, `src/cme/context.py` | Enterprise orchestrator and context engine |
+| `src/cme/chp/` | Consensus Hardening Protocol: gates, foundation disclosure, adversary, validation |
+| `src/cme/cfo_os/` | CFO operating system: briefs, dossiers, artifacts, audit trail |
+| `src/cme/finance/` | Finance engines (cash, variance, SaaS model, board reporting, AP, simulator) |
+| `src/cme/db/` | SQLAlchemy persistence layer (CockroachDB/PostgreSQL, SQLite for local dev) |
+| `src/demo/` | Sample finance, strategy, and compliance agents used by the demos |
 
-## 🔌 Supported Data Sources
+## Consensus Hardening Protocol
 
-| Source | Status | Config |
-|--------|--------|--------|
-| Synthetic CFO Engine | ✅ Default | `CONNECTOR=synthetic` |
-| QuickBooks Online | 🟡 Ready | `CONNECTOR=quickbooks` + sandbox creds |
-| Xero | 🔜 Coming | `CONNECTOR=xero` |
-| Qlik / Looker / PowerBI | 🔌 Pluggable | Custom MCP adapter |
+Recommendations pass through CHP before they are considered trustworthy:
 
-## 📊 Evaluation Rubric
+- R0 gate: solvable, scoped, valid, worth it
+- Foundation disclosure of the weakest assumptions
+- Adversarial review (devil's advocate)
+- Third-party validation (independent confirm/reject) before a decision locks
 
-Stratifi scores outputs on 5 CFO-critical dimensions:
+## Configuration
 
-| Dimension | Weight | Description |
-|-----------|--------|-------------|
-| **Financial Accuracy** | 30% | Traceable figures, correct calculations |
-| **Actionability** | 25% | Clear owners, timelines, success metrics |
-| **Risk Awareness** | 20% | Quantified risks + mitigations |
-| **Stakeholder Clarity** | 15% | Executive/board-ready communication |
-| **Data Faithfulness** | 10% | Zero hallucinations, explicit assumptions |
+Database access is configured via environment variables. Copy `.env.example` to
+`.env` and set values as needed:
 
-**Quality gates:** PoC ≥ 3.0 · Production ≥ 4.0
+- `STRATIFI_DATABASE_URL` — SQLAlchemy URL for CockroachDB/PostgreSQL. If unset,
+  the app falls back to a local SQLite database for development.
+- `STRATIFI_DB_CONNECT_TIMEOUT`, `STRATIFI_DB_STATEMENT_TIMEOUT_MS` — optional timeouts.
 
-## 🛠️ Development
+## Development
 
 ```bash
-# Set up virtual environment
 python -m venv .venv
 source .venv/bin/activate
-
-# Install with dev dependencies
-pip install -r requirements-dev.txt
-
-# Run linter
-ruff check .
+pip install -e ".[dev]"
 
 # Run tests
 pytest tests/ -v
-
-# Run the demo with a specific connector
-CONNECTOR=synthetic python scripts/run_demo.py
 ```
 
-## 📜 License
+## Tech Stack
 
-MIT. See LICENSE for details.
+- Python 3.10+
+- SQLAlchemy 2.x (CockroachDB / PostgreSQL via psycopg2; SQLite for local dev)
+- cubiczan-resilience (retry/timeout primitives)
 
-## 🤝 Contributing
+## License
 
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feat/amazing-connector`)
-3. Commit your changes (`git commit -m 'feat: add new connector'`)
-4. Push to the branch (`git push origin feat/amazing-connector`)
-5. Open a Pull Request
-
----
-
-Built for CFOs who demand trusted, actionable, and auditable AI.
+MIT. See [LICENSE](LICENSE) for details.
