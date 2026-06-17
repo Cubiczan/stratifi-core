@@ -13,3 +13,7 @@ build/
 *.egg
 .chp_registry.json
 node_modules/
+.env
+*.log
+*.db
+stratifi_core.db
