@@ -10,6 +10,7 @@ class CFOTaskType(str, Enum):
     FORECAST = "forecast"
     INVESTMENT_CASE = "investment_case"
     BOARD_OUTPUT = "board_output"
+    FILING_SWEEP = "filing_sweep"
 
 
 @dataclass
@@ -73,3 +74,17 @@ class BoardBrief(CFOBrief):
     open_questions: List[str] = field(default_factory=list)
     prior_board_decisions: List[str] = field(default_factory=list)
     strategic_risks: List[str] = field(default_factory=list)
+
+
+@dataclass
+class SweepBrief(CFOBrief):
+    """SEC filing sweep task — scans EDGAR for regulatory context before a decision run."""
+
+    task_type: CFOTaskType = CFOTaskType.FILING_SWEEP
+    ticker: str = ""
+    cik: str = ""
+    carry_dossier_into_context: bool = True
+    filing_types: List[str] = field(
+        default_factory=lambda: ["10-K", "10-Q", "8-K", "S-1", "13F", "Form D", "PRE 14A", "DEF 14A"]
+    )
+    min_filing_age_days: int = 45

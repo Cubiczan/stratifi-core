@@ -15,6 +15,7 @@ from cme.cfo_os.briefs import (
     CFOTaskType,
     ForecastBrief,
     InvestmentBrief,
+    SweepBrief,
 )
 
 
@@ -27,6 +28,8 @@ def build_decision_case(
         return _build_investment_case(brief)
     if isinstance(brief, BoardBrief):
         return _build_board_case(brief)
+    if isinstance(brief, SweepBrief):
+        return _build_sweep_case(brief)
     raise TypeError(f"Unsupported brief type: {type(brief).__name__}")
 
 
@@ -44,6 +47,7 @@ def _domain_for(task: CFOTaskType) -> str:
         CFOTaskType.FORECAST: "forecast",
         CFOTaskType.INVESTMENT_CASE: "capital_allocation",
         CFOTaskType.BOARD_OUTPUT: "board_decision",
+        CFOTaskType.FILING_SWEEP: "regulatory_filing_sweep",
     }[task]
 
 
@@ -362,3 +366,113 @@ def _board_foundation_score(brief: BoardBrief, options: list[str]) -> int:
     if brief.recommended_option_index < 0 or brief.recommended_option_index >= len(options):
         score -= 6
     return max(55, min(92, score))
+
+
+def _build_sweep_case(
+    brief: SweepBrief,
+) -> Tuple[DecisionCase, FoundationDisclosure, FoundationAttack]:
+    """Build decision case for an SEC filing sweep."""
+    decision_id = brief.decision_id or _decision_id("sweep", brief.title)
+    dossier = Dossier(
+        core_problem=brief.problem,
+        goal_state=[
+            f"Sweep {len(brief.filing_types)} filing types for {brief.ticker or brief.company}",
+            "Surface red flags: high 8-K count, S-1 amendments, activist PRE 14A, dilutive Form D",
+            "Seed decision context for downstream brief",
+        ]
+        + brief.strategic_priorities[:2],
+        current_state=[
+            f"Ticker: {brief.ticker or 'N/A'}",
+            f"CIK: {brief.cik or 'N/A'}",
+            f"Filing types: {', '.join(brief.filing_types)}",
+            f"Max filing age: {brief.min_filing_age_days} days",
+        ],
+        prior_decisions=[],
+        constraints=[
+            f"Filing data carries a {brief.min_filing_age_days}-day lag (SEC regulatory delay)",
+            "Only publicly available EDGAR data",
+        ]
+        + brief.constraints,
+        unknowns=[
+            "Filing parsing quality depends on EDGAR format stability",
+            "Non-standard attachments may not parse cleanly",
+        ],
+        scope=[
+            "Filing sweep execution",
+            "Red-flag heuristics",
+            "Context seeding for downstream brief",
+        ],
+        origin_direction=[
+            "Prefer filing sweep before deep-dive brief for full context",
+            "Cross-reference 13F positions with latest 13D/G filings",
+        ],
+        structural_vulnerabilities=[
+            "Sweep quality depends on filing completeness on EDGAR",
+            "13F data may be stale if manager uses 45-day filing window",
+            "S-1 amendments may be missed if filing system uses non-standard tags",
+        ],
+    )
+    case = DecisionCase(
+        decision_id=decision_id,
+        title=brief.title,
+        domain=_domain_for(brief.task_type),
+        created_at=_now(),
+        owner=brief.owner,
+        high_stakes=brief.high_stakes,
+        origin_system=brief.origin_system,
+        origin_model=brief.origin_model,
+        partner_system=brief.partner_system,
+        partner_model=brief.partner_model,
+        dossier=dossier,
+    )
+    disclosure = FoundationDisclosure(
+        weakest_assumptions=[
+            "EDGAR API is reachable and returns complete filing sets",
+            "Filing text parsing handles modern XBRL iXBRL formats",
+            "13F data is relevant despite regulatory filing lag",
+        ],
+        invalidation_conditions=[
+            "EDGAR returns 503 or rate-limits the sweep",
+            "Filing count is zero for primary types (10-K, 10-Q, 8-K)",
+        ],
+        key_vulnerability=(
+            "Sweep value is highest when it catches something a brief would miss — "
+            "a rapid 8-K cluster, an amended S-1, or activist PRE 14A."
+        ),
+    )
+    score = _sweep_foundation_score(brief)
+    attack = FoundationAttack(
+        assumption_attacks=[
+            "EDGAR may be rate-limiting or returning partial results for rapid-fire sweeps.",
+            "XBRL parsing may miss narrative-only disclosures in 8-K exhibits.",
+            "13F/13D cross-reference requires CUSIP→ticker mapping, which is incomplete.",
+        ],
+        invalidation_exploitation=[
+            "If EDGAR returns partial results, red-flag heuristics may be silent on real risk.",
+            "If CUSIP mapping is absent, manager positions remain opaque.",
+        ],
+        vulnerability_strike=(
+            "Sweep is a decision-preparation tool, not a decision itself. "
+            "The vulnerability is in trusting incomplete data as complete context."
+        ),
+        foundation_score=score,
+        attack_summary=(
+            "Filing sweep is directionally sound for pre-brief context seeding. "
+            "Watch for EDGAR availability and filing completeness."
+        ),
+    )
+    dossier.foundation_score = score
+    return case, disclosure, attack
+
+
+def _sweep_foundation_score(brief: SweepBrief) -> int:
+    score = 80
+    if not brief.ticker and not brief.cik:
+        score -= 12
+    if len(brief.filing_types) < 4:
+        score -= 8
+    if brief.min_filing_age_days > 90:
+        score -= 6
+    if not brief.carry_dossier_into_context:
+        score -= 5
+    return max(50, min(92, score))

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MoM Variance Studio</title>
+  <style>
+    :root { --bg: #f5f1e8; --panel: #fffdf8; --ink: #1f2520; --muted: #657166; --line: #d8cfbf; --accent: #134e4a; --warn: #b45309; --good: #166534; --bad: #b91c1c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Avenir Next","Segoe UI",sans-serif; background: linear-gradient(180deg,#f1eadb 0%,#f7f4ed 100%); color: var(--ink); }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 24px 56px; }
+    .hero, .summary-grid, .drivers-grid { display: grid; gap: 20px; }
+    .hero { grid-template-columns: 2fr 1fr; align-items: start; margin-bottom: 24px; }
+    .summary-grid { grid-template-columns: repeat(3,1fr); }
+    .drivers-grid { grid-template-columns: repeat(3,1fr); }
+    .hero-card, .card, .section { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 32px rgba(31,37,32,0.06); }
+    .hero-card { padding: 24px; }
+    .section { padding: 20px; margin-top: 18px; }
+    h1,h2,h3,p { margin: 0; }
+    h1 { font-size: 2.2rem; letter-spacing: -0.03em; margin-bottom: 8px; }
+    .eyebrow { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.75rem; margin-bottom: 12px; }
+    .subtext { color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    .kpi { padding: 18px; }
+    .label { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .value { font-size: 1.9rem; font-weight: 700; margin-top: 8px; }
+    .sub, .meta { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+    .variance, .metric { margin-top: 12px; font-weight: 700; }
+    .pos { color: var(--good); }
+    .neg { color: var(--bad); }
+    .driver { padding: 18px; }
+    .driver p { margin-top: 10px; line-height: 1.45; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.95rem; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    ul { margin: 12px 0 0; padding-left: 18px; line-height: 1.55; }
+    .pill { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: #e9efe7; color: var(--accent); font-size: 0.8rem; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #f7f3ea; border-radius: 12px; padding: 14px; margin-top: 10px; border: 1px solid var(--line); font-size: 0.85rem; line-height: 1.5; }
+    @media (max-width:900px) { .hero,.summary-grid,.drivers-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Month-over-Month Variance Studio</div>
+        <h1>Acme — 2026-02 → 2026-03</h1>
+        <p class="subtext">Revenue moved from 1,365,000 (2026-02) to 1,465,000 (2026-03), a trend that is improving. Top drivers: Subscription Revenue, Paid Search, Hosting Costs.</p>
+      </div>
+      <div class="hero-card">
+        <div class="eyebrow">Visible Drivers</div>
+        <p>6 of 5</p>
+        <p class="subtext">Spotlight: Subscription Revenue</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>KPI Comparison</h2>
+      <div class="summary-grid">
+        <div class="card kpi">
+          <div class="label">Revenue</div>
+          <div class="value">$100,000</div>
+          <div class="sub">2026-03: $1,465,000 | 2026-02: $1,365,000</div>
+          <div class="variance pos">7.3% delta</div>
+        </div>
+        
+
+        <div class="card kpi">
+          <div class="label">Gross Margin</div>
+          <div class="value">$80,000</div>
+          <div class="sub">2026-03: $1,110,000 | 2026-02: $1,030,000</div>
+          <div class="variance pos">7.8% delta</div>
+        </div>
+        
+
+        <div class="card kpi">
+          <div class="label">EBITDA</div>
+          <div class="value">$1,000</div>
+          <div class="sub">2026-03: $33,000 | 2026-02: $32,000</div>
+          <div class="variance pos">3.1% delta</div>
+        </div>
+        </div>
+    </section>
+
+    <section class="section">
+      <h2>Driver Movements</h2>
+      <table><thead><tr><th>Driver</th><th>Cat</th><th>2026-03</th><th>2026-02</th><th>Delta</th><th>Δ%</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Subscription Revenue</td>
+          <td>Revenue</td>
+          <td>$1,280,000</td>
+          <td>$1,175,000</td>
+          <td class="pos">$105,000</td>
+          <td>8.9%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Paid Search</td>
+          <td>OPEX</td>
+          <td>$240,000</td>
+          <td>$175,000</td>
+          <td class="pos">$65,000</td>
+          <td>37.1%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Hosting Costs</td>
+          <td>COGS</td>
+          <td>$210,000</td>
+          <td>$195,000</td>
+          <td class="pos">$15,000</td>
+          <td>7.7%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Product Engineering</td>
+          <td>OPEX</td>
+          <td>$620,000</td>
+          <td>$605,000</td>
+          <td class="pos">$15,000</td>
+          <td>2.5%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Customer Support</td>
+          <td>COGS</td>
+          <td>$145,000</td>
+          <td>$140,000</td>
+          <td class="pos">$5,000</td>
+          <td>3.6%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Services Revenue</td>
+          <td>Revenue</td>
+          <td>$185,000</td>
+          <td>$190,000</td>
+          <td class="neg">$-5,000</td>
+          <td>-2.6%</td>
+        </tr>
+        </tbody></table>
+      <div class='card'><h3>Other Bucket</h3><p>$-1,000 (-0.5%) across 2 items</p></div>
+    </section>
+
+    <section class="section">
+      <h2>Top Drivers</h2>
+      <div class="drivers-grid">
+        <div class="card driver">
+          <h3>Subscription Revenue</h3>
+          <p class="metric pos">$105,000 (8.9%)</p>
+          <p>Subscription Revenue is **105,000 above 2026-02**, representing a clear revenue movement.</p>
+          <p><strong>Recommendation:</strong> Determine whether this above-budget movement in Subscription Revenue is repeatable or one-off before forecasting.</p>
+        </div>
+        
+
+        <div class="card driver">
+          <h3>Paid Search</h3>
+          <p class="metric pos">$65,000 (37.1%)</p>
+          <p>Paid Search is **65,000 above 2026-02**, a notable operating expense shift.</p>
+          <p><strong>Recommendation:</strong> Engage the department owner for Paid Search to validate whether the trend is timing, scope, or structural.</p>
+        </div>
+        
+
+        <div class="card driver">
+          <h3>Hosting Costs</h3>
+          <p class="metric pos">$15,000 (7.7%)</p>
+          <p>Hosting Costs is **15,000 above 2026-02**, affecting gross margin.</p>
+          <p><strong>Recommendation:</strong> Analyze unit cost or supplier mix changes in Hosting Costs to confirm if the trend is structural.</p>
+        </div>
+        </div>
+    </section>
+
+    <section class="section"><h2>Executive Summary</h2><ul><li>Subscription Revenue moved by 105,000 between 2026-02 and 2026-03, the largest revenue trend in this comparison.</li><li>Paid Search moved by 65,000 between 2026-02 and 2026-03, the largest opex trend in this comparison.</li><li>Hosting Costs moved by 15,000 between 2026-02 and 2026-03, the largest cogs trend in this comparison.</li><li>EBITDA shifted by 1,000 between periods, linking top-line movement to bottom-line impact.</li></ul></section>
+    <section class="section"><h2>Risks</h2><ul><li><strong>medium:</strong> Subscription Revenue grew by 105,000 — without driver attribution, the trend narrative is incomplete.</li><li><strong>high:</strong> Paid Search grew by 65,000 — without driver attribution, the trend narrative is incomplete.</li></ul></section>
+    <section class="section"><h2>Opportunities</h2><ul><li>Subscription Revenue outperformance of 105,000 may reveal structural advantages. <span class="pill">105,000</span></li></ul></section>
+    <section class="section"><h2>Suggested Actions</h2><ul><li>Root-cause the Subscription Revenue movement: confirm whether it repeats or reverts in the next period. <span class="meta">owner=FP&amp;A</span></li><li>Root-cause the Paid Search movement: confirm whether it repeats or reverts in the next period. <span class="meta">owner=FP&amp;A</span></li><li>Root-cause the Hosting Costs movement: confirm whether it repeats or reverts in the next period. <span class="meta">owner=FP&amp;A</span></li></ul></section>
+    <section class="section"><h2>Audit Trail</h2><ul><li>Subscription Revenue selected as a top MoM driver with movement of 105,000 from 2026-02 to 2026-03. :: 2026-03=1280000.0, 2026-02=1175000.0, delta=105000.0</li><li>Paid Search selected as a top MoM driver with movement of 65,000 from 2026-02 to 2026-03. :: 2026-03=240000.0, 2026-02=175000.0, delta=65000.0</li><li>Hosting Costs selected as a top MoM driver with movement of 15,000 from 2026-02 to 2026-03. :: 2026-03=210000.0, 2026-02=195000.0, delta=15000.0</li></ul></section>
+    <section class='section'><h2>CHP Session</h2><pre># CHP Session
+Decision: MoM variance review: Acme 2026-02 → 2026-03
+Status: EXPLORING
+
+## Context Check
+- memory_tools: AVAILABLE
+- prior_sessions_count: 1
+- prior_lock_versions: ['chp-v1']
+- legacy_warning: False
+- related_locks: []
+- assessment: RELATED
+- action: AUTO_POPULATE
+
+## Model Parity
+- origin: GPT-5.4
+- partner: GPT-5-equivalent
+- delta: NONE
+
+## R0 Gate
+- verdict: PASS
+
+## Foundation
+- weakest_assumptions: 3
+- foundation_score: 80
+- verdict: PASS
+
+## Initial Packet
+BEGIN_PAYLOAD [RX] [RX3M7Y]
+1. CORE_PROBLEM_STATEMENT
+Identify and validate month-over-month performance drivers for Acme: 2026-02 → 2026-03.
+
+2. PARTNER_SYSTEM_PACKET
+From: Claude
+To: Partner
+Subject: CHP - Phase 0 Round 0
+
+STYLE_GUIDE:
+- Tone: Calm, spec-like
+- Framing: does not X unless Y
+- ASCII only
+
+R0_GATE:
+- verdict: PASS
+
+FOUNDATION_DISCLOSURE:
+1. Base period (2026-03) and compare period (2026-02) are comparable in business activity
+2. Account-level aggregation is the right grain for identifying trends
+3. No major reclasses or accounting adjustments occurred between periods
+INVALIDATION_CONDITIONS:
+1. Seasonal activity skews the comparison
+2. One-time items in either period distort the trend
+KEY_VULNERABILITY: MoM variance can be mistaken for a trend when it is actually timing, seasonal, or one-off.
+
+FOUNDATION_ATTACK:
+- score: 80
+- verdict: PASS
+- summary: MoM analysis provides useful directional signal, but each delta should be classified as timing, seasonal, or structural before locking.
+
+DOSSIER:
+{'core_problem': 'Identify and validate month-over-month performance drivers for Acme: 2026-02 → 2026-03.', 'goal_state': ['Top MoM drivers ranked by absolute movement', 'Trend narrative is grounded in numeric deltas', 'Reversible vs structural categorization documented'], 'current_state': ['Comparing 2026-02 to 2026-03', '5 accounts with measurable movement'], 'prior_decisions': [], 'constraints': ['Do not over-attribute direction until confirmed by root cause', 'Movement magnitude must drive ranking, not opinion'], 'unknowns': ['External market factors not present in the uploaded file', 'Operational timing decisions that may reverse next month'], 'scope': ['Driver ranking and categorization', 'Trend narrative hardening'], 'origin_direction': ['Prefer delta-grounded statements over qualitative speculation'], 'prior_round_summary': ['Top MoM drivers: Subscription Revenue, Paid Search, Hosting Costs'], 'unknowns_carried': [], 'foundation_score': 80, 'structural_vulnerabilities': ['MoM deltas can amplify timing shifts into structural-sounding trends']}
+VCL_DIAGNOSIS:
+- Driver ranking and categorization: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not over-attribute direction until confirmed by root cause
+- Trend narrative hardening: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not over-attribute direction until confirmed by root cause
+
+SHAPE_LOCK:
+- Return one payload envelope with From, To, Subject headers.
+- Phase 0 response must include FOUNDATION_ATTACK and STATE_SNAPSHOT.
+- Standard rounds must include ITEM_AGREEMENTS, WINNER_FRAMING, SCORING_TABLE, OBJECTIONS, FRAMEWORKS, CONVERGENCE_PLAN, STATE_SNAPSHOT.
+
+3. TRANSMISSION_CHECKLIST
+[ ] R0 Gate passed
+[ ] Foundation &gt;=70%
+[ ] Dossier updated
+[ ] Unknowns carried
+[ ] Blind spots acknowledged
+[ ] Structural vulnerabilities carried
+END_PAYLOAD [RX] [RX3M7Y]</pre></section>
+  </div>
+</body>
+</html>

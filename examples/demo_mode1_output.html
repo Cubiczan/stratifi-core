@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monthly CFO Variance Studio</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --panel: #fffdf8;
+      --ink: #1f2520;
+      --muted: #657166;
+      --line: #d8cfbf;
+      --accent: #134e4a;
+      --warn: #b45309;
+      --good: #166534;
+      --bad: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #f1eadb 0%, #f7f4ed 100%);
+      color: var(--ink);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+    .hero-card, .card, .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 12px 32px rgba(31, 37, 32, 0.06);
+    }
+    .hero-card {
+      padding: 24px;
+    }
+    .section {
+      padding: 20px;
+      margin-top: 18px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.75rem;
+      margin-bottom: 12px;
+    }
+    .subtext {
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .summary-grid, .drivers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .kpi {
+      padding: 18px;
+    }
+    .label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .value {
+      font-size: 1.9rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+    .sub, .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 6px;
+    }
+    .variance, .metric {
+      margin-top: 12px;
+      font-weight: 700;
+    }
+    .pos { color: var(--good); }
+    .neg { color: var(--bad); }
+    .driver {
+      padding: 18px;
+    }
+    .driver p {
+      margin-top: 10px;
+      line-height: 1.45;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      line-height: 1.55;
+    }
+    .pill {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e9efe7;
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f7f3ea;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    @media (max-width: 900px) {
+      .hero, .summary-grid, .drivers-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Monthly CFO Variance Studio</div>
+        <h1>Acme - 2026-03</h1>
+        <p class="subtext">The month is being driven primarily by Subscription Revenue, Paid Search, Services Revenue. Revenue is 45,000 versus budget, and EBITDA is -37,000 versus budget. The immediate focus should be to confirm whether these variances reflect timing, mix, or structural movement before the story is finalized for the board or CEO.</p>
+      </div>
+      <div class="hero-card">
+        <div class="eyebrow">Materiality</div>
+        <p><strong>Mode:</strong> auto</p>
+        <p class="subtext">Abs threshold $4,750 | Pct threshold 1.6%</p>
+        <p class="subtext">Visible drivers: 8</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>KPI Summary</h2>
+      <div class="summary-grid">
+        
+        <div class="card kpi">
+          <div class="label">Revenue</div>
+          <div class="value">$1,465,000</div>
+          <div class="sub">Budget $1,420,000</div>
+          <div class="variance pos">
+            Var $45,000 (3.2%)
+          </div>
+        </div>
+        
+
+        <div class="card kpi">
+          <div class="label">Gross Margin</div>
+          <div class="value">$1,110,000</div>
+          <div class="sub">Budget $1,090,000</div>
+          <div class="variance pos">
+            Var $20,000 (1.8%)
+          </div>
+        </div>
+        
+
+        <div class="card kpi">
+          <div class="label">EBITDA</div>
+          <div class="value">$33,000</div>
+          <div class="sub">Budget $70,000</div>
+          <div class="variance neg">
+            Var $-37,000 (-52.9%)
+          </div>
+        </div>
+        
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Visible Drivers</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Driver</th>
+            <th>Category</th>
+            <th>Actual</th>
+            <th>Budget</th>
+            <th>Variance</th>
+            <th>Variance %</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td>Subscription Revenue</td>
+          <td>Revenue</td>
+          <td>$1,280,000</td>
+          <td>$1,200,000</td>
+          <td class="pos">$80,000</td>
+          <td>6.7%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Paid Search</td>
+          <td>OPEX</td>
+          <td>$240,000</td>
+          <td>$180,000</td>
+          <td class="pos">$60,000</td>
+          <td>33.3%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Services Revenue</td>
+          <td>Revenue</td>
+          <td>$185,000</td>
+          <td>$220,000</td>
+          <td class="neg">$-35,000</td>
+          <td>-15.9%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Events</td>
+          <td>OPEX</td>
+          <td>$125,000</td>
+          <td>$160,000</td>
+          <td class="neg">$-35,000</td>
+          <td>-21.9%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Hosting Costs</td>
+          <td>COGS</td>
+          <td>$210,000</td>
+          <td>$180,000</td>
+          <td class="pos">$30,000</td>
+          <td>16.7%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Legal</td>
+          <td>OPEX</td>
+          <td>$92,000</td>
+          <td>$70,000</td>
+          <td class="pos">$22,000</td>
+          <td>31.4%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Product Engineering</td>
+          <td>OPEX</td>
+          <td>$620,000</td>
+          <td>$610,000</td>
+          <td class="pos">$10,000</td>
+          <td>1.6%</td>
+        </tr>
+        
+
+        <tr>
+          <td>Customer Support</td>
+          <td>COGS</td>
+          <td>$145,000</td>
+          <td>$150,000</td>
+          <td class="neg">$-5,000</td>
+          <td>-3.3%</td>
+        </tr>
+        
+        </tbody>
+      </table>
+      
+    </section>
+
+    <section class="section">
+      <h2>Top Drivers</h2>
+      <div class="drivers-grid">
+        
+        <div class="card driver">
+          <h3>Subscription Revenue</h3>
+          <p class="metric pos">$80,000 (6.7%)</p>
+          <p>Subscription Revenue is **80,000 above budget**, which is the clearest revenue-side movement in the current month.</p>
+          <p><strong>Recommendation:</strong> Reconcile the commercial pipeline and mix assumptions behind Subscription Revenue before locking the board narrative.</p>
+        </div>
+        
+
+        <div class="card driver">
+          <h3>Paid Search</h3>
+          <p class="metric pos">$60,000 (33.3%)</p>
+          <p>Paid Search is **60,000 above budget**, making it one of the largest operating expense drivers this month.</p>
+          <p><strong>Recommendation:</strong> Validate the owner, timing, and recurrence of Paid Search before finalizing any management action or escalation.</p>
+        </div>
+        
+
+        <div class="card driver">
+          <h3>Services Revenue</h3>
+          <p class="metric neg">$-35,000 (-15.9%)</p>
+          <p>Services Revenue is **35,000 below budget**, which is the clearest revenue-side movement in the current month.</p>
+          <p><strong>Recommendation:</strong> Reconcile the commercial pipeline and mix assumptions behind Services Revenue before locking the board narrative.</p>
+        </div>
+        
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Executive Summary</h2>
+      <ul><li>Subscription Revenue is one of the largest movements at 80,000 versus budget, creating a favorable signal that should anchor the monthly narrative.</li><li>Paid Search is one of the largest movements at 60,000 versus budget, creating a unfavorable signal that should anchor the monthly narrative.</li><li>Services Revenue is one of the largest movements at -35,000 versus budget, creating a unfavorable signal that should anchor the monthly narrative.</li><li>EBITDA is -37,000 versus budget, so the final commentary should connect driver-level movement back to bottom-line impact.</li></ul>
+    </section>
+
+    <section class="section">
+      <h2>Risks</h2>
+      <ul><li><strong>high:</strong> Paid Search is pressuring spend control and could weaken confidence in cost discipline if left unexplained.</li></ul>
+    </section>
+
+    <section class="section">
+      <h2>Opportunities</h2>
+      <ul><li>Subscription Revenue is outperforming budget and can be used to identify repeatable commercial tactics or mix advantages. <span class="pill">80,000</span></li></ul>
+    </section>
+
+    <section class="section">
+      <h2>Suggested Actions</h2>
+      <ul><li>Confirm the commercial explanation behind Subscription Revenue and decide whether it should change the next forecast cut. <span class="meta">owner=Revenue / FP&amp;A</span> <span class="meta">impact=forecast quality</span></li><li>Validate whether Paid Search is timing, scope, or a true structural movement before locking management commentary. <span class="meta">owner=Department owner / FP&amp;A</span> <span class="meta">impact=variance credibility</span></li><li>Confirm the commercial explanation behind Services Revenue and decide whether it should change the next forecast cut. <span class="meta">owner=Revenue / FP&amp;A</span> <span class="meta">impact=forecast quality</span></li></ul>
+    </section>
+
+    <section class="section">
+      <h2>Audit Trail</h2>
+      <ul><li>Subscription Revenue is included because it ranks among the largest absolute budget variances. :: actual=1280000.0, budget=1200000.0, variance=80000.0</li><li>Paid Search is included because it ranks among the largest absolute budget variances. :: actual=240000.0, budget=180000.0, variance=60000.0</li><li>Services Revenue is included because it ranks among the largest absolute budget variances. :: actual=185000.0, budget=220000.0, variance=-35000.0</li><li>The topline driver discussion should reconcile back to EBITDA movement. :: ebitda_actual=33000.0, ebitda_budget=70000.0, ebitda_variance=-37000.0</li></ul>
+    </section>
+
+    <section class='section'><h2>CHP Session</h2><pre># CHP Session
+Decision: Monthly variance review for Acme 2026-03
+Status: EXPLORING
+
+## Context Check
+- memory_tools: AVAILABLE
+- prior_sessions_count: 0
+- prior_lock_versions: []
+- legacy_warning: False
+- related_locks: []
+- assessment: SPARSE
+- action: PROCEED
+
+## Model Parity
+- origin: GPT-5.4
+- partner: GPT-5-equivalent
+- delta: NONE
+
+## R0 Gate
+- verdict: PASS
+
+## Foundation
+- weakest_assumptions: 3
+- foundation_score: 84
+- verdict: PASS
+
+## Initial Packet
+BEGIN_PAYLOAD [RX] [WE0N9W]
+1. CORE_PROBLEM_STATEMENT
+Identify and harden the top monthly performance drivers for Acme in 2026-03.
+
+2. PARTNER_SYSTEM_PACKET
+From: Claude
+To: Partner
+Subject: CHP - Phase 0 Round 0
+
+STYLE_GUIDE:
+- Tone: Calm, spec-like
+- Framing: does not X unless Y
+- ASCII only
+
+R0_GATE:
+- verdict: PASS
+
+FOUNDATION_DISCLOSURE:
+1. The uploaded file has enough granularity to explain the top three drivers
+2. Budget is the correct comparison baseline for all included accounts
+3. Account-level aggregation is the right grain for the current narrative
+INVALIDATION_CONDITIONS:
+1. Material file quality issues change the driver ranking
+2. Management context contradicts the initial numeric explanation
+KEY_VULNERABILITY: The story can sound stronger than the evidence if the numeric ranking is correct but the cause is not yet validated.
+
+FOUNDATION_ATTACK:
+- score: 84
+- verdict: PASS
+- summary: The variance logic is useful, but the narrative must remain disciplined. Rank can be trusted faster than explanation unless supporting context is added.
+
+DOSSIER:
+{'core_problem': 'Identify and harden the top monthly performance drivers for Acme in 2026-03.', 'goal_state': ['Top 3 drivers are ranked by absolute budget variance', 'Narrative is grounded in KPI and driver values', 'Board-ready commentary is defensible before lock'], 'current_state': ['Analysis grouped by account', '3 candidate drivers identified for top-driver review', '0 data quality warning(s) detected'], 'prior_decisions': [], 'constraints': ['Do not invent unsupported causal explanations', 'Top 3 selections must match absolute variance ranking'], 'unknowns': ['Root cause detail outside the uploaded finance file', 'Cross-functional context not yet provided by operators'], 'scope': ['Driver ranking', 'Narrative hardening', 'Action recommendation lock'], 'origin_direction': ['Prefer grounded narrative over polished but unsupported explanation', 'Escalate assumptions when data quality is weak'], 'prior_round_summary': ['Initial top drivers: Subscription Revenue, Paid Search, Services Revenue'], 'unknowns_carried': [], 'foundation_score': 84, 'structural_vulnerabilities': ['Variance narrative can overstate causality if operational context is missing', 'Weak file quality can distort rank ordering']}
+VCL_DIAGNOSIS:
+- Driver ranking: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not invent unsupported causal explanations
+- Narrative hardening: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not invent unsupported causal explanations
+- Action recommendation lock: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not invent unsupported causal explanations
+
+SHAPE_LOCK:
+- Return one payload envelope with From, To, Subject headers.
+- Phase 0 response must include FOUNDATION_ATTACK and STATE_SNAPSHOT.
+- Standard rounds must include ITEM_AGREEMENTS, WINNER_FRAMING, SCORING_TABLE, OBJECTIONS, FRAMEWORKS, CONVERGENCE_PLAN, STATE_SNAPSHOT.
+
+3. TRANSMISSION_CHECKLIST
+[ ] R0 Gate passed
+[ ] Foundation &gt;=70%
+[ ] Dossier updated
+[ ] Unknowns carried
+[ ] Blind spots acknowledged
+[ ] Structural vulnerabilities carried
+END_PAYLOAD [RX] [WE0N9W]</pre></section>
+  </div>
+</body>
+</html>

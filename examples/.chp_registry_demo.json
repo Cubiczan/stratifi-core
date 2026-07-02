@@ -1,0 +1,406 @@
+{
+  "variance-acme-2026-03": {
+    "decision_id": "variance-acme-2026-03",
+    "title": "Monthly variance review for Acme 2026-03",
+    "domain": "variance_copilot",
+    "created_at": "2026-05-25T11:51:35.365707+00:00",
+    "owner": "cfo",
+    "status": "EXPLORING",
+    "high_stakes": true,
+    "current_phase": 0,
+    "current_round": 0,
+    "origin_system": "Claude",
+    "origin_model": "GPT-5.4",
+    "partner_system": "Partner",
+    "partner_model": "GPT-5-equivalent",
+    "context_check": {
+      "memory_tools": "AVAILABLE",
+      "prior_sessions_count": 0,
+      "prior_lock_versions": [],
+      "legacy_warning": false,
+      "related_locks": [],
+      "assessment": "SPARSE",
+      "action": "PROCEED"
+    },
+    "model_parity": {
+      "origin": "GPT-5.4",
+      "partner": "GPT-5-equivalent",
+      "delta": "NONE",
+      "advisory": null
+    },
+    "dossier": {
+      "core_problem": "Identify and harden the top monthly performance drivers for Acme in 2026-03.",
+      "goal_state": [
+        "Top 3 drivers are ranked by absolute budget variance",
+        "Narrative is grounded in KPI and driver values",
+        "Board-ready commentary is defensible before lock"
+      ],
+      "current_state": [
+        "Analysis grouped by account",
+        "3 candidate drivers identified for top-driver review",
+        "0 data quality warning(s) detected"
+      ],
+      "prior_decisions": [],
+      "constraints": [
+        "Do not invent unsupported causal explanations",
+        "Top 3 selections must match absolute variance ranking"
+      ],
+      "unknowns": [
+        "Root cause detail outside the uploaded finance file",
+        "Cross-functional context not yet provided by operators"
+      ],
+      "scope": [
+        "Driver ranking",
+        "Narrative hardening",
+        "Action recommendation lock"
+      ],
+      "origin_direction": [
+        "Prefer grounded narrative over polished but unsupported explanation",
+        "Escalate assumptions when data quality is weak"
+      ],
+      "prior_round_summary": [
+        "Initial top drivers: Subscription Revenue, Paid Search, Services Revenue"
+      ],
+      "unknowns_carried": [],
+      "foundation_score": 84,
+      "structural_vulnerabilities": [
+        "Variance narrative can overstate causality if operational context is missing",
+        "Weak file quality can distort rank ordering"
+      ]
+    },
+    "foundation_score": 84,
+    "locked_decisions": [],
+    "structural_vulnerabilities": [
+      "Variance narrative can overstate causality if operational context is missing",
+      "Weak file quality can distort rank ordering",
+      "The highest risk is false narrative confidence, not arithmetic failure.",
+      "The file may be sufficient for ranking but insufficient for causal explanation.",
+      "Budget comparisons may hide reclasses, phasing shifts, or one-offs."
+    ],
+    "blind_spots": [],
+    "flip_criteria": [],
+    "devil_advocate_rounds": [
+      {
+        "phase": 0,
+        "round_number": 0,
+        "why_direction_wrong": "The highest risk is false narrative confidence, not arithmetic failure.",
+        "what_not_seeing": "Material file quality issues change the driver ranking",
+        "false_consensus_risk": "Foundation agreement may reflect shared optimism unless the disclosed weak assumptions survive attack.",
+        "structural_vulnerabilities": [
+          "The highest risk is false narrative confidence, not arithmetic failure.",
+          "The file may be sufficient for ranking but insufficient for causal explanation.",
+          "Budget comparisons may hide reclasses, phasing shifts, or one-offs."
+        ]
+      }
+    ],
+    "vcl_diagnoses": [
+      {
+        "item": "Driver ranking",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not invent unsupported causal explanations"
+      },
+      {
+        "item": "Narrative hardening",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not invent unsupported causal explanations"
+      },
+      {
+        "item": "Action recommendation lock",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not invent unsupported causal explanations"
+      }
+    ],
+    "state_snapshots": [
+      {
+        "PHASE": 0,
+        "ROUND": "0/5",
+        "STATUS": "EXPLORING",
+        "PAYLOAD_ECHO": "[RX] [WE0N9W] ORIGIN_SENT",
+        "FOUNDATION_SCORE": 84,
+        "LOCKED": [],
+        "PROVISIONAL": [],
+        "PROVISIONAL_LOCK": [],
+        "FLIP_ACTIVE": [],
+        "BLIND_SPOTS_ACKNOWLEDGED": {
+          "Origin": [],
+          "Partner": []
+        },
+        "STRUCTURAL_VULNERABILITIES": [
+          "Variance narrative can overstate causality if operational context is missing",
+          "Weak file quality can distort rank ordering",
+          "The highest risk is false narrative confidence, not arithmetic failure.",
+          "The file may be sufficient for ranking but insufficient for causal explanation.",
+          "Budget comparisons may hide reclasses, phasing shifts, or one-offs."
+        ],
+        "THIRD_PARTY_PENDING": []
+      }
+    ],
+    "third_party_log": [],
+    "rounds": []
+  },
+  "mom-variance-acme-2026-03-vs-2026-02": {
+    "decision_id": "mom-variance-acme-2026-03-vs-2026-02",
+    "title": "MoM variance review: Acme 2026-02 \u2192 2026-03",
+    "domain": "variance_copilot",
+    "created_at": "2026-05-25T11:51:35.374471+00:00",
+    "owner": "cfo",
+    "status": "EXPLORING",
+    "high_stakes": true,
+    "current_phase": 0,
+    "current_round": 0,
+    "origin_system": "Claude",
+    "origin_model": "GPT-5.4",
+    "partner_system": "Partner",
+    "partner_model": "GPT-5-equivalent",
+    "context_check": {
+      "memory_tools": "AVAILABLE",
+      "prior_sessions_count": 1,
+      "prior_lock_versions": [
+        "chp-v1"
+      ],
+      "legacy_warning": false,
+      "related_locks": [],
+      "assessment": "RELATED",
+      "action": "AUTO_POPULATE"
+    },
+    "model_parity": {
+      "origin": "GPT-5.4",
+      "partner": "GPT-5-equivalent",
+      "delta": "NONE",
+      "advisory": null
+    },
+    "dossier": {
+      "core_problem": "Identify and validate month-over-month performance drivers for Acme: 2026-02 \u2192 2026-03.",
+      "goal_state": [
+        "Top MoM drivers ranked by absolute movement",
+        "Trend narrative is grounded in numeric deltas",
+        "Reversible vs structural categorization documented"
+      ],
+      "current_state": [
+        "Comparing 2026-02 to 2026-03",
+        "5 accounts with measurable movement"
+      ],
+      "prior_decisions": [],
+      "constraints": [
+        "Do not over-attribute direction until confirmed by root cause",
+        "Movement magnitude must drive ranking, not opinion"
+      ],
+      "unknowns": [
+        "External market factors not present in the uploaded file",
+        "Operational timing decisions that may reverse next month"
+      ],
+      "scope": [
+        "Driver ranking and categorization",
+        "Trend narrative hardening"
+      ],
+      "origin_direction": [
+        "Prefer delta-grounded statements over qualitative speculation"
+      ],
+      "prior_round_summary": [
+        "Top MoM drivers: Subscription Revenue, Paid Search, Hosting Costs"
+      ],
+      "unknowns_carried": [],
+      "foundation_score": 80,
+      "structural_vulnerabilities": [
+        "MoM deltas can amplify timing shifts into structural-sounding trends"
+      ]
+    },
+    "foundation_score": 80,
+    "locked_decisions": [],
+    "structural_vulnerabilities": [
+      "MoM deltas can amplify timing shifts into structural-sounding trends",
+      "The highest risk is interpreting a timing delta as a structural trend.",
+      "2026-03 and 2026-02 may not be comparable if business mix changed.",
+      "Account-level aggregation may mask meaningful departmental shifts."
+    ],
+    "blind_spots": [],
+    "flip_criteria": [],
+    "devil_advocate_rounds": [
+      {
+        "phase": 0,
+        "round_number": 0,
+        "why_direction_wrong": "The highest risk is interpreting a timing delta as a structural trend.",
+        "what_not_seeing": "Seasonal activity skews the comparison",
+        "false_consensus_risk": "Foundation agreement may reflect shared optimism unless the disclosed weak assumptions survive attack.",
+        "structural_vulnerabilities": [
+          "The highest risk is interpreting a timing delta as a structural trend.",
+          "2026-03 and 2026-02 may not be comparable if business mix changed.",
+          "Account-level aggregation may mask meaningful departmental shifts."
+        ]
+      }
+    ],
+    "vcl_diagnoses": [
+      {
+        "item": "Driver ranking and categorization",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not over-attribute direction until confirmed by root cause"
+      },
+      {
+        "item": "Trend narrative hardening",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not over-attribute direction until confirmed by root cause"
+      }
+    ],
+    "state_snapshots": [
+      {
+        "PHASE": 0,
+        "ROUND": "0/5",
+        "STATUS": "EXPLORING",
+        "PAYLOAD_ECHO": "[RX] [RX3M7Y] ORIGIN_SENT",
+        "FOUNDATION_SCORE": 80,
+        "LOCKED": [],
+        "PROVISIONAL": [],
+        "PROVISIONAL_LOCK": [],
+        "FLIP_ACTIVE": [],
+        "BLIND_SPOTS_ACKNOWLEDGED": {
+          "Origin": [],
+          "Partner": []
+        },
+        "STRUCTURAL_VULNERABILITIES": [
+          "MoM deltas can amplify timing shifts into structural-sounding trends",
+          "The highest risk is interpreting a timing delta as a structural trend.",
+          "2026-03 and 2026-02 may not be comparable if business mix changed.",
+          "Account-level aggregation may mask meaningful departmental shifts."
+        ],
+        "THIRD_PARTY_PENDING": []
+      }
+    ],
+    "third_party_log": [],
+    "rounds": []
+  },
+  "forecast-variance-acme-2026-03": {
+    "decision_id": "forecast-variance-acme-2026-03",
+    "title": "Forecast variance review: Acme 2026-03",
+    "domain": "variance_copilot",
+    "created_at": "2026-05-25T11:51:35.383685+00:00",
+    "owner": "cfo",
+    "status": "EXPLORING",
+    "high_stakes": true,
+    "current_phase": 0,
+    "current_round": 0,
+    "origin_system": "Claude",
+    "origin_model": "GPT-5.4",
+    "partner_system": "Partner",
+    "partner_model": "GPT-5-equivalent",
+    "context_check": {
+      "memory_tools": "AVAILABLE",
+      "prior_sessions_count": 0,
+      "prior_lock_versions": [],
+      "legacy_warning": false,
+      "related_locks": [],
+      "assessment": "SPARSE",
+      "action": "PROCEED"
+    },
+    "model_parity": {
+      "origin": "GPT-5.4",
+      "partner": "GPT-5-equivalent",
+      "delta": "NONE",
+      "advisory": null
+    },
+    "dossier": {
+      "core_problem": "Evaluate forecast accuracy for Acme in 2026-03 by hardening actual-vs-forecast deviations through CHP.",
+      "goal_state": [
+        "Top forecast deviations ranked by absolute error",
+        "Forecast methodology gaps identified for process improvement",
+        "Deviations classified as timing, methodology, or true surprises"
+      ],
+      "current_state": [
+        "Actual-to-forecast comparison for Acme 2026-03",
+        "3 accounts with measurable forecast deviation"
+      ],
+      "prior_decisions": [],
+      "constraints": [
+        "Do not attribute forecast errors without methodology or timing context",
+        "Rank by absolute forecast error, not directional spin"
+      ],
+      "unknowns": [
+        "Forecast methodology details behind each line item",
+        "Whether deviations are systematic or account-specific"
+      ],
+      "scope": [
+        "Forecast deviation ranking",
+        "Accuracy narrative hardening"
+      ],
+      "origin_direction": [
+        "Prefer actionable forecast improvement over retrospective blame"
+      ],
+      "prior_round_summary": [
+        "Top forecast deviations: Paid Search, Events, Subscription Revenue"
+      ],
+      "unknowns_carried": [],
+      "foundation_score": 78,
+      "structural_vulnerabilities": [
+        "Forecast deviations can be misattributed without methodology audit"
+      ]
+    },
+    "foundation_score": 78,
+    "locked_decisions": [],
+    "structural_vulnerabilities": [
+      "Forecast deviations can be misattributed without methodology audit",
+      "Forecast process improvement requires understanding whether errors are random or systematic.",
+      "Forecast may be based on different methodology for different departments.",
+      "Aggregation may hide offsetting errors within an account."
+    ],
+    "blind_spots": [],
+    "flip_criteria": [],
+    "devil_advocate_rounds": [
+      {
+        "phase": 0,
+        "round_number": 0,
+        "why_direction_wrong": "Forecast process improvement requires understanding whether errors are random or systematic.",
+        "what_not_seeing": "Forecast vs budget confusion in the source data",
+        "false_consensus_risk": "Foundation agreement may reflect shared optimism unless the disclosed weak assumptions survive attack.",
+        "structural_vulnerabilities": [
+          "Forecast process improvement requires understanding whether errors are random or systematic.",
+          "Forecast may be based on different methodology for different departments.",
+          "Aggregation may hide offsetting errors within an account."
+        ]
+      }
+    ],
+    "vcl_diagnoses": [
+      {
+        "item": "Forecast deviation ranking",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not attribute forecast errors without methodology or timing context"
+      },
+      {
+        "item": "Accuracy narrative hardening",
+        "symptom_altitude": "R2 Task",
+        "constraint_altitude": "R4 System",
+        "diagnosis": "Lower task fixes fail unless the system constraint is handled first: Do not attribute forecast errors without methodology or timing context"
+      }
+    ],
+    "state_snapshots": [
+      {
+        "PHASE": 0,
+        "ROUND": "0/5",
+        "STATUS": "EXPLORING",
+        "PAYLOAD_ECHO": "[RX] [T5OPMA] ORIGIN_SENT",
+        "FOUNDATION_SCORE": 78,
+        "LOCKED": [],
+        "PROVISIONAL": [],
+        "PROVISIONAL_LOCK": [],
+        "FLIP_ACTIVE": [],
+        "BLIND_SPOTS_ACKNOWLEDGED": {
+          "Origin": [],
+          "Partner": []
+        },
+        "STRUCTURAL_VULNERABILITIES": [
+          "Forecast deviations can be misattributed without methodology audit",
+          "Forecast process improvement requires understanding whether errors are random or systematic.",
+          "Forecast may be based on different methodology for different departments.",
+          "Aggregation may hide offsetting errors within an account."
+        ],
+        "THIRD_PARTY_PENDING": []
+      }
+    ],
+    "third_party_log": [],
+    "rounds": []
+  }
+}

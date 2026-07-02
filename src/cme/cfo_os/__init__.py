@@ -26,12 +26,14 @@ from cme.cfo_os.briefs import (
     CFOTaskType,
     ForecastBrief,
     InvestmentBrief,
+    SweepBrief,
 )
 from cme.cfo_os.artifacts import (
     BoardOutput,
     CFOArtifact,
     ForecastPack,
     InvestmentCaseMemo,
+    SweepPack,
 )
 from cme.cfo_os.audit import AuditTrail, AuditEntry
 from cme.cfo_os.orchestrator import CFOOperatingSystem, CFOSessionReport
@@ -50,4 +52,6 @@ __all__ = [
     "ForecastPack",
     "InvestmentBrief",
     "InvestmentCaseMemo",
+    "SweepBrief",
+    "SweepPack",
 ]

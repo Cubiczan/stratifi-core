@@ -1,0 +1,25 @@
+period,entity,department,account,category,actual,budget
+2026-03,Acme,Sales,Subscription Revenue,Revenue,1280000,1200000
+2026-03,Acme,Sales,Services Revenue,Revenue,185000,220000
+2026-03,Acme,Operations,Hosting Costs,COGS,210000,180000
+2026-03,Acme,Operations,Customer Support,COGS,145000,150000
+2026-03,Acme,Marketing,Paid Search,OPEX,240000,180000
+2026-03,Acme,Marketing,Events,OPEX,125000,160000
+2026-03,Acme,G&A,Legal,OPEX,92000,70000
+2026-03,Acme,R&D,Product Engineering,OPEX,620000,610000
+2026-02,Acme,Sales,Subscription Revenue,Revenue,1175000,1190000
+2026-02,Acme,Sales,Services Revenue,Revenue,190000,210000
+2026-02,Acme,Operations,Hosting Costs,COGS,195000,185000
+2026-02,Acme,Operations,Customer Support,COGS,140000,145000
+2026-02,Acme,Marketing,Paid Search,OPEX,175000,170000
+2026-02,Acme,Marketing,Events,OPEX,130000,150000
+2026-02,Acme,G&A,Legal,OPEX,88000,75000
+2026-02,Acme,R&D,Product Engineering,OPEX,605000,600000
+2026-01,Acme,Sales,Subscription Revenue,Revenue,1150000,1180000
+2026-01,Acme,Sales,Services Revenue,Revenue,200000,205000
+2026-01,Acme,Operations,Hosting Costs,COGS,190000,182000
+2026-01,Acme,Operations,Customer Support,COGS,138000,140000
+2026-01,Acme,Marketing,Paid Search,OPEX,168000,165000
+2026-01,Acme,Marketing,Events,OPEX,135000,145000
+2026-01,Acme,G&A,Legal,OPEX,85000,72000
+2026-01,Acme,R&D,Product Engineering,OPEX,590000,595000

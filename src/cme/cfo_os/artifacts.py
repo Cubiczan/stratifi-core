@@ -16,7 +16,7 @@ from typing import Any, Dict, List
 
 from cme.agent import TurnResult
 from cme.chp.models import DecisionCase, SessionStatus
-from cme.cfo_os.briefs import BoardBrief, ForecastBrief, InvestmentBrief
+from cme.cfo_os.briefs import BoardBrief, ForecastBrief, InvestmentBrief, SweepBrief
 
 
 @dataclass
@@ -55,6 +55,13 @@ class InvestmentCaseMemo(CFOArtifact):
 
 @dataclass
 class BoardOutput(CFOArtifact):
+    pass
+
+
+@dataclass
+class SweepPack(CFOArtifact):
+    """SEC filing sweep output — regulatory context for downstream briefs."""
+
     pass
 
 
@@ -212,6 +219,71 @@ def build_investment_case_memo(
             strategy_view,
             compliance_view,
             flip_section,
+            lock_section,
+        ],
+    )
+
+
+def build_sweep_pack(
+    *,
+    brief: SweepBrief,
+    case: DecisionCase,
+    turns: List[TurnResult],
+) -> SweepPack:
+    """Build a SweepPack from a SweepBrief + CHP case + agent turns."""
+    by_agent = _by_agent(turns)
+    finance = by_agent.get("finance")
+    strategy = by_agent.get("strategy")
+    compliance = by_agent.get("compliance")
+
+    target_section = {
+        "heading": "Sweep Target",
+        "bullets": [
+            f"Company: {brief.company}",
+            f"Ticker: {brief.ticker or 'N/A'}",
+            f"CIK: {brief.cik or 'auto-resolve'}",
+            f"Filing types: {', '.join(brief.filing_types)}",
+            f"Age filter: {brief.min_filing_age_days} days",
+        ],
+    }
+    finance_view = {
+        "heading": "Finance View",
+        "bullets": _agent_bullets(finance),
+    }
+    strategy_view = {
+        "heading": "Strategy View",
+        "bullets": _agent_bullets(strategy),
+    }
+    compliance_view = {
+        "heading": "Compliance View",
+        "bullets": _agent_bullets(compliance),
+    }
+    context_section = {
+        "heading": "Context Seeding",
+        "bullets": [
+            "Sweep data seeded into ContextEngine for downstream brief",
+            f"Carry dossier: {'yes' if brief.carry_dossier_into_context else 'no'}",
+        ],
+    }
+    lock_section = {
+        "heading": "Sweep Lock Status",
+        "bullets": [
+            f"Foundation score: {case.foundation_score}",
+            f"Status: {_lock_state(case)}",
+            "Sweep is a pre-brief artifact — downstream decisions carry separate CHP sessions.",
+        ],
+    }
+
+    return SweepPack(
+        title=f"SEC Filing Sweep — {brief.ticker or brief.company}",
+        decision_id=case.decision_id,
+        lock_state=_lock_state(case),
+        sections=[
+            target_section,
+            finance_view,
+            strategy_view,
+            compliance_view,
+            context_section,
             lock_section,
         ],
     )

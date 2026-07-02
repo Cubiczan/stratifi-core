@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Forecast Variance Studio</title><style>
+:root { --bg:#f5f1e8; --panel:#fffdf8; --ink:#1f2520; --muted:#657166; --line:#d8cfbf; --accent:#134e4a; --good:#166534; --bad:#b91c1c; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:"Avenir Next","Segoe UI",sans-serif; background:linear-gradient(180deg,#f1eadb,#f7f4ed); color:var(--ink); }
+.wrap { max-width:1200px; margin:0 auto; padding:32px 24px 56px; }
+.hero,.summary-grid,.drivers-grid { display:grid; gap:20px; }
+.hero { grid-template-columns:2fr 1fr; align-items:start; margin-bottom:24px; }
+.summary-grid { grid-template-columns:repeat(3,1fr); }
+.drivers-grid { grid-template-columns:repeat(3,1fr); }
+.hero-card,.card,.section { background:var(--panel); border:1px solid var(--line); border-radius:18px; box-shadow:0 12px 32px rgba(31,37,32,0.06); }
+.hero-card { padding:24px; }
+.section { padding:20px; margin-top:18px; }
+h1,h2,h3,p { margin:0; }
+h1 { font-size:2.2rem; letter-spacing:-0.03em; margin-bottom:8px; }
+.eyebrow { color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:0.12em; font-size:0.75rem; margin-bottom:12px; }
+.subtext { color:var(--muted); margin-top:10px; line-height:1.5; }
+.value { font-size:1.9rem; font-weight:700; margin-top:8px; }
+.sub,.meta { color:var(--muted); font-size:0.9rem; margin-top:6px; }
+.variance,.metric { margin-top:12px; font-weight:700; }
+.pos { color:var(--good); } .neg { color:var(--bad); }
+.driver { padding:18px; } .driver p { margin-top:10px; line-height:1.45; }
+table { width:100%; border-collapse:collapse; margin-top:12px; font-size:0.95rem; }
+th,td { padding:12px 10px; border-bottom:1px solid var(--line); text-align:left; }
+th { color:var(--muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; }
+ul { margin:12px 0 0; padding-left:18px; line-height:1.55; }
+.pill { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; background:#e9efe7; color:var(--accent); font-size:0.8rem; }
+pre { white-space:pre-wrap; background:#f7f3ea; border-radius:12px; padding:14px; margin-top:10px; border:1px solid var(--line); font-size:0.85rem; line-height:1.5; }
+@media (max-width:900px) { .hero,.summary-grid,.drivers-grid { grid-template-columns:1fr; } }
+</style></head><body><div class="wrap">
+<section class="hero"><div class="hero-card"><div class="eyebrow">Forecast Variance Studio</div>
+<h1>Acme — 2026-03</h1>
+<p class="subtext">Forecast accuracy for Acme in 2026-03: 98.5%. Total actual $2,897,000 vs forecast $2,853,000 (variance $44,000). Largest Paid Search drives the dominant variance.</p></div>
+<div class="hero-card"><div class="eyebrow">Forecast Accuracy</div>
+<p>6 deviation drivers visible</p></div></section>
+<section class="section"><h2>KPI: Actual vs Forecast</h2><div class="summary-grid"><div class="card kpi"><div class="label">Revenue</div>
+          <div class="value">$5,000</div>
+          <div class="sub">Act $1,465,000 | Fcst $1,460,000</div>
+          <div class="variance pos">0.3%</div></div>
+<div class="card kpi"><div class="label">Gross Margin</div>
+          <div class="value">$-12,000</div>
+          <div class="sub">Act $1,110,000 | Fcst $1,122,000</div>
+          <div class="variance neg">-1.1%</div></div>
+<div class="card kpi"><div class="label">EBITDA</div>
+          <div class="value">$-34,000</div>
+          <div class="sub">Act $33,000 | Fcst $67,000</div>
+          <div class="variance neg">-50.7%</div></div></div></section>
+<section class="section"><h2>Deviations</h2><table><thead><tr><th>Driver</th><th>Cat</th><th>Actual</th><th>Forecast</th><th>Var</th><th>Var%</th></tr></thead><tbody><tr><td>Paid Search</td><td>OPEX</td>
+          <td>$240,000</td><td>$200,000</td>
+          <td class="pos">$40,000</td>
+          <td>20.0%</td></tr>
+<tr><td>Events</td><td>OPEX</td>
+          <td>$125,000</td><td>$155,000</td>
+          <td class="neg">$-30,000</td>
+          <td>-19.4%</td></tr>
+<tr><td>Subscription Revenue</td><td>Revenue</td>
+          <td>$1,280,000</td><td>$1,260,000</td>
+          <td class="pos">$20,000</td>
+          <td>1.6%</td></tr>
+<tr><td>Hosting Costs</td><td>COGS</td>
+          <td>$210,000</td><td>$190,000</td>
+          <td class="pos">$20,000</td>
+          <td>10.5%</td></tr>
+<tr><td>Services Revenue</td><td>Revenue</td>
+          <td>$185,000</td><td>$200,000</td>
+          <td class="neg">$-15,000</td>
+          <td>-7.5%</td></tr>
+<tr><td>Legal</td><td>OPEX</td>
+          <td>$92,000</td><td>$85,000</td>
+          <td class="pos">$7,000</td>
+          <td>8.2%</td></tr></tbody></table></section>
+<section class="section"><h2>Top Deviations</h2><div class="drivers-grid"><div class="card driver"><h3>Paid Search</h3>
+          <p class="metric pos">$40,000 (20.0%)</p>
+          <p>Paid Search **40,000 above forecast** — operating expense forecast deviation.</p><p><strong>Rec:</strong> Engage Paid Search owner to reconcile actual vs forecast variance.</p></div>
+<div class="card driver"><h3>Events</h3>
+          <p class="metric neg">$-30,000 (-19.4%)</p>
+          <p>Events **30,000 below forecast** — operating expense forecast deviation.</p><p><strong>Rec:</strong> Engage Events owner to reconcile actual vs forecast variance.</p></div>
+<div class="card driver"><h3>Subscription Revenue</h3>
+          <p class="metric pos">$20,000 (1.6%)</p>
+          <p>Subscription Revenue **20,000 above forecast** — key revenue forecast variance.</p><p><strong>Rec:</strong> Review forecast methodology for Subscription Revenue: what drove the miss/beat?</p></div></div></section>
+<section class="section"><h2>Executive Summary</h2><ul><li>Revenue: actual $1,465,000 vs forecast $1,460,000 — beat by $5,000.</li><li>Paid Search is the largest variance at $40,000 (20.0%) and should anchor the forecast quality review.</li></ul></section>
+<section class="section"><h2>Risks</h2><ul><li><strong>high:</strong> Paid Search variance of $40,000 indicates forecast process weakness if this account is material.</li><li><strong>medium:</strong> Events variance of $30,000 indicates forecast process weakness if this account is material.</li></ul></section>
+<section class="section"><h2>Opportunities</h2><ul><li>Paid Search variance of $40,000 is an opportunity to improve forecasting precision for this line item. <span class="pill">40,000</span></li><li>Events variance of $30,000 is an opportunity to improve forecasting precision for this line item. <span class="pill">30,000</span></li></ul></section>
+<section class="section"><h2>Suggested Actions</h2><ul><li>Root-cause the Paid Search forecast variance: is it a methodology issue, timing, or a true surprise? <span class="meta">owner=FP&amp;A / Department</span></li><li>Root-cause the Events forecast variance: is it a methodology issue, timing, or a true surprise? <span class="meta">owner=FP&amp;A / Department</span></li><li>Root-cause the Subscription Revenue forecast variance: is it a methodology issue, timing, or a true surprise? <span class="meta">owner=FP&amp;A / Department</span></li></ul></section>
+<section class="section"><h2>Audit Trail</h2><ul><li>Paid Search: actual $240,000 vs forecast $200,000 — deviation of $40,000.</li><li>Events: actual $125,000 vs forecast $155,000 — deviation of $-30,000.</li><li>Subscription Revenue: actual $1,280,000 vs forecast $1,260,000 — deviation of $20,000.</li></ul></section>
+<section class='section'><h2>CHP Session</h2><pre># CHP Session
+Decision: Forecast variance review: Acme 2026-03
+Status: EXPLORING
+
+## Context Check
+- memory_tools: AVAILABLE
+- prior_sessions_count: 0
+- prior_lock_versions: []
+- legacy_warning: False
+- related_locks: []
+- assessment: SPARSE
+- action: PROCEED
+
+## Model Parity
+- origin: GPT-5.4
+- partner: GPT-5-equivalent
+- delta: NONE
+
+## R0 Gate
+- verdict: PASS
+
+## Foundation
+- weakest_assumptions: 3
+- foundation_score: 78
+- verdict: PASS
+
+## Initial Packet
+BEGIN_PAYLOAD [RX] [T5OPMA]
+1. CORE_PROBLEM_STATEMENT
+Evaluate forecast accuracy for Acme in 2026-03 by hardening actual-vs-forecast deviations through CHP.
+
+2. PARTNER_SYSTEM_PACKET
+From: Claude
+To: Partner
+Subject: CHP - Phase 0 Round 0
+
+STYLE_GUIDE:
+- Tone: Calm, spec-like
+- Framing: does not X unless Y
+- ASCII only
+
+R0_GATE:
+- verdict: PASS
+
+FOUNDATION_DISCLOSURE:
+1. Forecast column is internal management forecast (not budget or board guidance)
+2. Account-level aggregation is right for measuring forecast precision
+3. Forecast methodology is consistent across accounts being compared
+INVALIDATION_CONDITIONS:
+1. Forecast vs budget confusion in the source data
+KEY_VULNERABILITY: Forecast accuracy can look worse than reality if methodology differences aren't normalized.
+
+FOUNDATION_ATTACK:
+- score: 78
+- verdict: PASS
+- summary: Forecast variance provides clear improvement signal, but root cause analysis requires methodology context.
+
+DOSSIER:
+{'core_problem': 'Evaluate forecast accuracy for Acme in 2026-03 by hardening actual-vs-forecast deviations through CHP.', 'goal_state': ['Top forecast deviations ranked by absolute error', 'Forecast methodology gaps identified for process improvement', 'Deviations classified as timing, methodology, or true surprises'], 'current_state': ['Actual-to-forecast comparison for Acme 2026-03', '3 accounts with measurable forecast deviation'], 'prior_decisions': [], 'constraints': ['Do not attribute forecast errors without methodology or timing context', 'Rank by absolute forecast error, not directional spin'], 'unknowns': ['Forecast methodology details behind each line item', 'Whether deviations are systematic or account-specific'], 'scope': ['Forecast deviation ranking', 'Accuracy narrative hardening'], 'origin_direction': ['Prefer actionable forecast improvement over retrospective blame'], 'prior_round_summary': ['Top forecast deviations: Paid Search, Events, Subscription Revenue'], 'unknowns_carried': [], 'foundation_score': 78, 'structural_vulnerabilities': ['Forecast deviations can be misattributed without methodology audit']}
+VCL_DIAGNOSIS:
+- Forecast deviation ranking: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not attribute forecast errors without methodology or timing context
+- Accuracy narrative hardening: symptom=R2 Task; constraint=R4 System; diagnosis=Lower task fixes fail unless the system constraint is handled first: Do not attribute forecast errors without methodology or timing context
+
+SHAPE_LOCK:
+- Return one payload envelope with From, To, Subject headers.
+- Phase 0 response must include FOUNDATION_ATTACK and STATE_SNAPSHOT.
+- Standard rounds must include ITEM_AGREEMENTS, WINNER_FRAMING, SCORING_TABLE, OBJECTIONS, FRAMEWORKS, CONVERGENCE_PLAN, STATE_SNAPSHOT.
+
+3. TRANSMISSION_CHECKLIST
+[ ] R0 Gate passed
+[ ] Foundation &gt;=70%
+[ ] Dossier updated
+[ ] Unknowns carried
+[ ] Blind spots acknowledged
+[ ] Structural vulnerabilities carried
+END_PAYLOAD [RX] [T5OPMA]</pre></section>
+</div></body></html>
