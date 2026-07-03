@@ -11,9 +11,36 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 logger = logging.getLogger("stratifi_core.db")
 
-COCKROACH_URL = "cockroachdb+psycopg2://cubiczan:oY-hPkgXtZjc6kGqY67Gyg@vortex-giraffe-15678.jxf.gcp-us-east1.cockroachlabs.cloud:26257/stratifi_core?sslmode=require"
-DATABASE_URL = os.getenv("STRATIFI_DATABASE_URL", COCKROACH_URL)
-engine = create_engine(DATABASE_URL, pool_size=8, max_overflow=4, pool_timeout=30, pool_pre_ping=True)
+# Connection string is read from the environment so credentials are never
+# committed to source control. Set STRATIFI_DATABASE_URL to a CockroachDB/
+# PostgreSQL SQLAlchemy URL (see .env.example). Falls back to a local SQLite
+# database for development when the variable is unset.
+DEFAULT_DATABASE_URL = "sqlite:///stratifi_core.db"
+DATABASE_URL = os.getenv("STRATIFI_DATABASE_URL", DEFAULT_DATABASE_URL)
+
+# Per-statement / per-connection timeouts so a hung or unreachable DB fails fast
+# instead of blocking callers indefinitely.
+#   - connect_timeout: cap the TCP/SSL handshake (seconds).
+#   - statement_timeout: cap any single SQL statement server-side (milliseconds).
+CONNECT_TIMEOUT_S = int(os.getenv("STRATIFI_DB_CONNECT_TIMEOUT", "5"))
+STATEMENT_TIMEOUT_MS = int(os.getenv("STRATIFI_DB_STATEMENT_TIMEOUT_MS", "5000"))
+
+# The connect_args below are PostgreSQL/CockroachDB specific; skip them for the
+# local SQLite development fallback, which does not support those options.
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=8,
+        max_overflow=4,
+        pool_timeout=30,
+        pool_pre_ping=True,
+        connect_args={
+            "connect_timeout": CONNECT_TIMEOUT_S,
+            "options": "-c statement_timeout={}".format(STATEMENT_TIMEOUT_MS),
+        },
+    )
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 def get_session() -> Session: return SessionLocal()
